@@ -6,7 +6,7 @@ import os
 import csv
 import pdb
 
-from cleverhans.attacks_hw import SmoothBasicIterativeMethodCG
+from cleverhans.attacks_SAE import SmoothBasicIterativeMethodCG
 import numpy as np
 from PIL import Image
 from cleverhans.utils_tf import tf_model_load
@@ -209,6 +209,7 @@ def main(_):
 
         #preds_adv = model.get_probs(adv_x) 
         x_adv = sess.run(adv_x,feed_dict={x_input:images,adv_A:A})
+        pdb.set_trace()
         print('done 16')
         save_images(x_adv, filenames, FLAGS.output_dir)
     end = time.clock()

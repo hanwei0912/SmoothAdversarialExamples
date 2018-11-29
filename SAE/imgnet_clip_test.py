@@ -7,8 +7,7 @@ import csv
 import pdb
 import time
 
-from cleverhans.attacks_hw import Clip_version_debug
-from cleverhans.attacks_hw import FastGradientMethod
+from cleverhans.attacks_SAE import SmoothCarliniWagnerL2CG
 from cleverhans.utils_tf import model_train, model_eval, tf_model_load
 import numpy as np
 from PIL import Image
@@ -162,7 +161,7 @@ def main(_):
     preds = model(x_input)
     tf_model_load(sess, FLAGS.checkpoint_path)
 
-    cw = Clip_version_debug(model, back='tf', sess=sess)
+    cw = SmoothCarliniWagnerL2CG(model, back='tf', sess=sess)
     # Run computation
 
     for filenames, images, labels in load_images(FLAGS.input_dir, FLAGS.metadata_file_path, batch_shape):
@@ -195,6 +194,7 @@ def main(_):
                      'A': A}
         x_adv = cw.generate_np(images,
                                **cw_params)
+        pdb.set_trace()
         elapsed = (time.time() - start)
         print("Time used:", elapsed)
         save_images(x_adv, filenames, FLAGS.output_dir)

@@ -16,7 +16,7 @@ import time
 import logging
 import pdb
 import os
-from cleverhans.attacks_hw import SmoothBasicIterativeMethod
+from cleverhans.attacks_SAE import SmoothBasicIterativeMethod
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
@@ -187,6 +187,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
              (source_samples , img_rows, img_cols, 1))
         adv_y = Y_test[start_p:end_p]
         adv = sess.run(adv_x,feed_dict={x:adv_inputs,y:adv_y,A:pi,At:pit})
+        pdb.set_trace()
         
         elapsed = (time.time() - start)
         file_name = "smooth/mnist_BasicCnn_sbim_"+str((A_i+1)*100)+str(eps)+"_"+str(eps_iter)+"_adv_x.mat"
