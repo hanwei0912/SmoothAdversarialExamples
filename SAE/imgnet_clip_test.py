@@ -226,7 +226,7 @@ if __name__ == '__main__':
         'checkpoint_path', '/nfs/pyrex/raid6/hzhang/2017-nips/models/inception_v3.ckpt', 'Path to checkpoint for inception network.')
     tf.flags.DEFINE_string(
         'input_dir', '/nfs/pyrex/raid6/hzhang/2017-nips/images', 'Input directory with images.')
-    path_save = '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/inceptionV3/'+str(args.learning_rate)
+    path_save = '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/test/'+str(args.learning_rate)
     folder = os.path.exists(path_save)
     if not folder:
         os.makedirs(path_save)

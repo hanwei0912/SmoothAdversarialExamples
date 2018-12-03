@@ -7,7 +7,7 @@ import pdb
 
 import cleverhans.utils as utils
 from cleverhans.model import Model, CallableModelWrapper
-from cleverhans.attacks_hw import Attack
+from cleverhans.attacks import Attack
 
 class SmoothCarliniWagnerL2CG(Attack):
     """
@@ -116,6 +116,121 @@ class SmoothCarliniWagnerL2CG(Attack):
         self.clip_min = clip_min
         self.clip_max = clip_max
 
+class Clip_version_eig_norm(Attack):
+    """
+    This attack was originally proposed by Carlini and Wagner. It is an
+    iterative attack that finds adversarial examples on many defenses that
+    are robust to other attacks.
+    Paper link: https://arxiv.org/abs/1608.04644
+    At a high level, this attack is an iterative attack using Adam and
+    a specially-chosen loss function to find adversarial examples with
+    lower distortion than other attacks. This comes at the cost of speed,
+    as this attack is often much slower than others.
+    """
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
+        """
+        super(Clip_version_eig_norm, self).__init__(model, back, sess)
+
+        import tensorflow as tf
+        self.feedable_kwargs = {'y': tf.float32,
+                                'y_target': tf.float32,
+                                'A':tf.float32,
+                                'At':tf.float32}
+
+        self.structural_kwargs = ['batch_size', 'confidence',
+                                  'targeted', 'learning_rate',
+                                  'binary_search_steps', 'max_iterations',
+                                  'abort_early', 'initial_const',
+                                  'clip_min', 'clip_max','eig_num']
+
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'logits')
+
+    def generate(self, x, **kwargs):
+        """
+        Return a tensor that constructs adversarial examples for the given
+        input. Generate uses tf.py_func in order to operate over tensors.
+        :param x: (required) A tensor with the inputs.
+        :param y: (optional) A tensor with the true labels for an untargeted
+                  attack. If None (and y_target is None) then use the
+                  original labels the classifier assigns.
+        :param y_target: (optional) A tensor with the target labels for a
+                  targeted attack.
+        :param confidence: Confidence of adversarial examples: higher produces
+                           examples with larger l2 distortion, but more
+                           strongly classified as adversarial.
+        :param batch_size: Number of attacks to run simultaneously.
+        :param learning_rate: The learning rate for the attack algorithm.
+                              Smaller values produce better results but are
+                              slower to converge.
+        :param binary_search_steps: The number of times we perform binary
+                                    search to find the optimal tradeoff-
+                                    constant between norm of the purturbation
+                                    and confidence of the classification.
+        :param max_iterations: The maximum number of iterations. Setting this
+                               to a larger value will produce lower distortion
+                               results. Using only a few iterations requires
+                               a larger learning rate, and will produce larger
+                               distortion results.
+        :param abort_early: If true, allows early aborts if gradient descent
+                            is unable to make progress (i.e., gets stuck in
+                            a local minimum).
+        :param initial_const: The initial tradeoff-constant to use to tune the
+                              relative importance of size of the pururbation
+                              and confidence of classification.
+                              If binary_search_steps is large, the initial
+                              constant is not important. A smaller value of
+                              this constant gives lower distortion results.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        :param eig_num: number of the eig value
+        """
+        import tensorflow as tf
+        from .attacks_SAE import Clip_version_eig_norm as CLV2
+        self.parse_params(**kwargs)
+
+        labels, nb_classes = self.get_or_guess_labels(x, kwargs)
+
+        At = kwargs['At']
+        A = kwargs['A']
+        attack = CLV2(self.sess, self.model, self.batch_size,
+                      self.confidence, 'y_target' in kwargs,
+                      self.learning_rate, self.binary_search_steps,
+                      self.max_iterations, self.abort_early,
+                      self.initial_const, self.clip_min, self.clip_max, self.eig_num,
+                      nb_classes, x.get_shape().as_list()[1:])
+
+        def cv_wrap(x_val, y_val, A_val, At_val):
+            return np.array(attack.attack(x_val, y_val, A_val, At_val), dtype=np.float32)
+        wrap = tf.py_func(cv_wrap, [x, labels, A, At], tf.float32)
+
+        return wrap
+
+    def parse_params(self, y=None, y_target=None, nb_classes=None,
+                     batch_size=1, confidence=0,
+                     learning_rate=5e-3,
+                     binary_search_steps=5, max_iterations=1000,
+                     abort_early=True, initial_const=1e-2,
+                     clip_min=0, clip_max=1, eig_num=50, A=None,At=None):
+
+        # ignore the y and y_target argument
+        if nb_classes is not None:
+            warnings.warn("The nb_classes argument is depricated and will "
+                          "be removed on 2018-02-11")
+        self.batch_size = batch_size
+        self.confidence = confidence
+        self.learning_rate = learning_rate
+        self.binary_search_steps = binary_search_steps
+        self.max_iterations = max_iterations
+        self.abort_early = abort_early
+        self.initial_const = initial_const
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+        self.eig_num = eig_num
+
 class SmoothBasicIterativeMethod(Attack):
 
     """
@@ -160,7 +275,7 @@ class SmoothBasicIterativeMethod(Attack):
         :param clip_max: (optional float) Maximum input component value
         """
         import tensorflow as tf
-        from cleverhans.attacks_hw import FastGradientMethod
+        from cleverhans.attacks import FastGradientMethod
 
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
@@ -304,7 +419,7 @@ class SmoothBasicIterativeMethodCG(Attack):
         """
         import tensorflow as tf
         from .utils_SAE import CG
-        from cleverhans.attacks_hw import FastGradientMethod
+        from cleverhans.attacks import FastGradientMethod
 
 
         # Parse and save attack-specific parameters
