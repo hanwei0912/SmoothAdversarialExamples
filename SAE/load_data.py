@@ -8,6 +8,7 @@ import pdb
 import numpy as np
 from PIL import Image
 import scipy.io as si
+import tensorflow as tf
 
 def load_images(input_dir, ori_input_dir, metadata_file_path,  batch_shape):
     """Read png images from input directory in batches.
@@ -39,12 +40,12 @@ def load_images(input_dir, ori_input_dir, metadata_file_path,  batch_shape):
             image = np.array(Image.open(f).convert('RGB')
                              ).astype(np.float) / 255.0
         # Images for inception classifier are normalized to be in [-1, 1] interval.
-        images[idx, :, :, :] = image
+        images[idx, :, :, :] = image * 2.0 - 1.0
         filenames.append(os.path.basename(filepath))
         ori_filepath = os.path.join(ori_input_dir,os.path.basename(filepath))
         with tf.gfile.Open(ori_filepath) as f:
             ori_image = np.array(Image.open(f).convert('RGB')).astype(np.float) / 255.0
-        X_test[idx,:,:,:]=ori_image
+        X_test[idx,:,:,:]=ori_image * 2.0 - 1.0
         (name,_) = os.path.splitext(os.path.basename(filepath))
         (ind_l,_) = np.where(rows==name)
         row = rows[ind_l][0]

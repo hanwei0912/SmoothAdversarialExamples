@@ -9,6 +9,7 @@ import cleverhans.utils as utils
 from cleverhans.model import Model, CallableModelWrapper
 from cleverhans.attacks import Attack
 
+
 class SmoothCarliniWagnerL2CG(Attack):
     """
     This attack was originally proposed from the work SmoothAdversarialPerturbation. It introduced
@@ -16,12 +17,12 @@ class SmoothCarliniWagnerL2CG(Attack):
     slower than other, this attack is also slow. This version uses Conjugate Gradient to calculate the 
     smoothness, which is suitable to the big images like ImageNet. 
     """
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model,  sess=None):
         """
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
-        super(SmoothCarliniWagnerL2CG, self).__init__(model, back, sess)
+        super(SmoothCarliniWagnerL2CG, self).__init__(model, sess)
 
         import tensorflow as tf
         self.feedable_kwargs = {'y': tf.float32,
@@ -127,12 +128,12 @@ class Clip_version_eig_norm(Attack):
     lower distortion than other attacks. This comes at the cost of speed,
     as this attack is often much slower than others.
     """
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model,  sess=None):
         """
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
-        super(Clip_version_eig_norm, self).__init__(model, back, sess)
+        super(Clip_version_eig_norm, self).__init__(model, sess)
 
         import tensorflow as tf
         self.feedable_kwargs = {'y': tf.float32,
@@ -239,13 +240,13 @@ class SmoothBasicIterativeMethod(Attack):
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
 
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model,  sess=None):
         """
         Create a BasicIterativeMethod instance.
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
-        super(SmoothBasicIterativeMethod, self).__init__(model, back, sess)
+        super(SmoothBasicIterativeMethod, self).__init__(model, sess)
         self.feedable_kwargs = {'eps': np.float32,
                                 'eps_iter': np.float32,
                                 'y': np.float32,
@@ -302,7 +303,7 @@ class SmoothBasicIterativeMethod(Attack):
                       'clip_min': self.clip_min, 'clip_max': self.clip_max}
 
         for i in range(self.nb_iter):
-            FGM = FastGradientMethod(self.model, back=self.back,
+            FGM = FastGradientMethod(self.model,
                                      sess=self.sess)
             # Compute this step's perturbation
             eta = FGM.generate(x + eta, **fgm_params) - x
@@ -382,13 +383,13 @@ class SmoothBasicIterativeMethodCG(Attack):
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
 
-    def __init__(self, model, back='tf', sess=None):
+    def __init__(self, model, sess=None):
         """
         Create a BasicIterativeMethod instance.
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
-        super(SmoothBasicIterativeMethodCG, self).__init__(model, back, sess)
+        super(SmoothBasicIterativeMethodCG, self).__init__(model, sess)
         self.feedable_kwargs = {'eps': np.float32,
                                 'eps_iter': np.float32,
                                 'y': np.float32,
@@ -447,10 +448,10 @@ class SmoothBasicIterativeMethodCG(Attack):
                       'clip_min': self.clip_min, 'clip_max': self.clip_max}
 
         for i in range(self.nb_iter):
-            FGM = FastGradientMethod(self.model, back=self.back,
+            FGM = FastGradientMethod(self.model, 
                                      sess=self.sess)
             # Compute this step's perturbation
-            eta = FGM.generate(x + eta, **fgm_params) - x
+            eta = FGM.generate(tf.clip_by_value(x + eta,self.clip_min,self.clip_max), **fgm_params) - x
 
             shape = eta.shape
             modifier = tf.reshape(eta,(shape[0],shape[1]*shape[2],shape[3]))

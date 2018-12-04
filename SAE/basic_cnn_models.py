@@ -204,31 +204,34 @@ def make_imagenet_cnn(input_shape=(None, 224, 224, 3)):
     return model
 
 class ResNetModel(Model):
-  """Model class for CleverHans library."""
+    """Model class for CleverHans library."""
 
-  def __init__(self, num_classes):
-    self.num_classes = num_classes
-    self.built = False
+    def __init__(self, num_classes):
+        self.num_classes = num_classes
+        self.built = False
 
-  def __call__(self, x_input, return_logits=False):
-    """Constructs model and return probabilities for given input."""
-    reuse = True if self.built else None
-    with slim.arg_scope(resnet_v2.resnet_arg_scope()):
-      _, end_points = resnet_v2.resnet_v2_50(
-          x_input, num_classes=self.num_classes, is_training=False,
-          reuse=reuse)
-    self.built = True
-    self.logits = end_points['resnet_v2_50/logits']
-    output = end_points['predictions']
-    # Strip off the extra reshape op at the output
-    self.probs = output.op.inputs[0]
-    return self.probs
+    def __call__(self, x_input, return_logits=False):
+        """Constructs model and return probabilities for given input."""
+        reuse = True if self.built else None
+        with slim.arg_scope(resnet_v2.resnet_arg_scope()):
+          _, end_points = resnet_v2.resnet_v2_50(
+              x_input, num_classes=self.num_classes, is_training=False,
+              reuse=reuse)
+        self.built = True
+        self.logits = end_points['resnet_v2_50/logits']
+        output = end_points['predictions']
+        # Strip off the extra reshape op at the output
+        self.probs = output.op.inputs[0]
+        if return_logits:
+            return self.logits
+        else:
+            return self.probs
 
-  def get_logits(self,x_input):
-    return self(x_input,return_logits=True)
+    def get_logits(self,x_input):
+        return self(x_input,return_logits=True)
 
-  def get_probs(self, x_input):
-    return self(x_input)
+    def get_probs(self, x_input):
+        return self(x_input)
 
 class InceptionModel(Model):
     """Model class for CleverHans library."""
@@ -249,7 +252,10 @@ class InceptionModel(Model):
         output = end_points['Predictions']
         # Strip off the extra reshape op at the output
         self.probs = output.op.inputs[0]
-        return self.probs
+        if return_logits:
+            return self.logits
+        else:
+            return self.probs
 
     def get_logits(self, x_input):
         return self(x_input, return_logits=True)
