@@ -5,6 +5,7 @@ pic_list=dir(path_name);
 p_n=size(pic_list);
 for i=3:p_n
     name=pic_list(i).name;
+    name = '7f045354f4577c16.png';
     ori_path=sprintf('%s%s',path_name,name);
     ori=imread(ori_path);
     ori=im2double(ori);

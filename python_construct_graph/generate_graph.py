@@ -10,14 +10,20 @@ import numpy as np
 import scipy.io as si
 from PIL import Image
 from numpy import linalg as LA
-from knn import *
-
-def load_images(input_dir):
-    for filepath in tf.
+from knn import construct_imagenet_graph
+from load_data import *
 
 def main():
     path_name = "/nfs/pyrex/raid6/hzhang/2017-nips/images/" # path of your data
-    image,imgname = load_imagenet(path_name)
+    lamubda = 300
+    alpha   = 0.997
+    imgnames = load_imagenet_list(path_name)
+    for imgname in imgnames:
+        imgpath =os.path.join(path_name,imgname)
+        img=load_imagenet_image(imgpath)
+        A = construct_imagenet_graph(img,lamubda,alpha)
+
+
 
 
 
