@@ -3,26 +3,11 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import csv
 import pdb
 import glob
 import numpy as np
-import scipy.io as si
 from scipy.sparse import csr_matrix
 import scipy.sparse as ss
-from PIL import Image
-
-
-def load_imagenet(imageDir):
-    image = []
-    imgname = []
-    imagelist = glob.golb(os.path.join(imageDir,'*.png'))
-    for item in imagelist:
-        image.append(os.path.basename(item))
-    for item in image:
-        (temp1,)=os.path.splitext(item)
-        imgname.append(temp1)
-    return image, imgname
 
 def similarity(x_img,lamuda):
     """

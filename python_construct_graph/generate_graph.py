@@ -12,7 +12,14 @@ from PIL import Image
 from numpy import linalg as LA
 from knn import *
 
-path_name = "/nfs/pyrex/raid6/hzhang/2017-nips/images/"
+def load_images(input_dir):
+    for filepath in tf.
+
+def main():
+    path_name = "/nfs/pyrex/raid6/hzhang/2017-nips/images/" # path of your data
+    image,imgname = load_imagenet(path_name)
 
 
 
+if __name__ == '__main__':
+    main()
