@@ -63,37 +63,6 @@ def load_images(input_dir, metadata_file_path,  batch_shape):
     if idx > 0:
         yield filenames, images, labels
 
-#def load_images(input_dir, metadata_file_path,  batch_shape):
-#    """Read png images from input directory in batches.
-#    Args:
-#      input_dir: input directory
-#      batch_shape: shape of minibatch array, i.e. [batch_size, height, width, 3]
-#    Yields:
-#      filenames: list file names without path of each image
-#        Lenght of this list could be less than batch_size, in this case only
-#        first few images of the result are elements of the minibatch.
-#      images: array with all images from this batch
-#    """
-#
-#    images = np.zeros(batch_shape)
-#    filenames = []
-#    idx = 0
-#    batch_size = batch_shape[0]
-#    for filepath in tf.gfile.Glob(os.path.join(input_dir, '*.png')):
-#        with tf.gfile.Open(filepath) as f:
-#            image = np.array(Image.open(f).convert('RGB')).astype(np.float) / 255.0
-#        # Images for inception classifier are normalized to be in [-1, 1] interval.
-#        images[idx, :, :, :] = image * 2.0 - 1.0
-#        filenames.append(os.path.basename(filepath))
-#        idx += 1
-#        if idx == batch_size:
-#            yield filenames, images
-#            filenames = []
-#            images = np.zeros(batch_shape)
-#            idx = 0
-#    if idx > 0:
-#        yield filenames, images
-
 
 def save_images(images, filenames, output_dir):
     """Saves images to the output directory.
@@ -170,16 +139,15 @@ def main(_):
             y_labels[i_y][labels[i_y]]=1
         # load matrix A
         def load_A(filenames, batch_shape, img_size, namuda):
-            #data_dir = "/nfs/pyrex/raid6/hzhang/number_one/data/A_/imageNet/SpA_"
-            data_dir = "/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/A/SpA_"
+            data_dir = "../dataset/A/"
             n_f = len(filenames)
             A = np.zeros((batch_shape, 4, 299, 299, 3))
             for i in range(n_f):
-                name_p = data_dir+filenames[i]+"_"+namuda+"_0.997000.mat"
+                name_p = data_dir+filenames[i]+"_"+namuda+"_0.997.mat"
                 data = si.loadmat(name_p)
                 A[i] = data['A']
             return A
-        A = load_A(filenames, FLAGS.batch_size, FLAGS.image_height*FLAGS.image_width, '300.000000')
+        A = load_A(filenames, FLAGS.batch_size, FLAGS.image_height*FLAGS.image_width, '300')
         A = np.array(A, dtype=np.float32)
 
         start = time.time()
@@ -223,10 +191,10 @@ if __name__ == '__main__':
                          'binary_search_steps for cw attack')
     tf.flags.DEFINE_float('learning_rate', args.learning_rate, 'learning_rate for cw attack')
     tf.flags.DEFINE_string(
-        'checkpoint_path', '/nfs/pyrex/raid6/hzhang/2017-nips/models/inception_v3.ckpt', 'Path to checkpoint for inception network.')
+        'checkpoint_path', '../models/inception_v3.ckpt', 'Path to checkpoint for inception network.')
     tf.flags.DEFINE_string(
-        'input_dir', '/nfs/pyrex/raid6/hzhang/2017-nips/images', 'Input directory with images.')
-    path_save = '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/test/'+str(args.learning_rate)
+        'input_dir', '../dataset/images', 'Input directory with images.')
+    path_save = '../dataset/smooth'
     folder = os.path.exists(path_save)
     if not folder:
         os.makedirs(path_save)
@@ -239,9 +207,9 @@ if __name__ == '__main__':
     tf.flags.DEFINE_integer(
         'image_height', 299, 'Height of each input images.')
     tf.flags.DEFINE_integer(
-        'batch_size', 20, 'How many images process at one time.')
+        'batch_size', 1, 'How many images process at one time.')
     tf.flags.DEFINE_string(
         'metadata_file_path',
-        '/nfs/pyrex/raid6/hzhang/2017-nips/dev_dataset_fail.csv',
+        '../dataset/dev_dataset.csv',
         'Path to metadata file.')
     tf.app.run()

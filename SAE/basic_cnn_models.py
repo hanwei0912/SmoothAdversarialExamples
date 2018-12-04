@@ -10,6 +10,9 @@ from __future__ import unicode_literals
 import numpy as np
 import tensorflow as tf
 from cleverhans.model import Model
+from tensorflow.contrib.slim.nets import inception
+from tensorflow.contrib.slim.nets import resnet_v2
+slim = tf.contrib.slim
 
 
 class MLP(Model):
@@ -199,3 +202,61 @@ def make_imagenet_cnn(input_shape=(None, 224, 224, 3)):
 
     model = MLP(layers, input_shape)
     return model
+
+class ResNetModel(Model):
+  """Model class for CleverHans library."""
+
+  def __init__(self, num_classes):
+    self.num_classes = num_classes
+    self.built = False
+
+  def __call__(self, x_input, return_logits=False):
+    """Constructs model and return probabilities for given input."""
+    reuse = True if self.built else None
+    with slim.arg_scope(resnet_v2.resnet_arg_scope()):
+      _, end_points = resnet_v2.resnet_v2_50(
+          x_input, num_classes=self.num_classes, is_training=False,
+          reuse=reuse)
+    self.built = True
+    self.logits = end_points['resnet_v2_50/logits']
+    output = end_points['predictions']
+    # Strip off the extra reshape op at the output
+    self.probs = output.op.inputs[0]
+    return self.probs
+
+  def get_logits(self,x_input):
+    return self(x_input,return_logits=True)
+
+  def get_probs(self, x_input):
+    return self(x_input)
+
+class InceptionModel(Model):
+    """Model class for CleverHans library."""
+
+    def __init__(self, num_classes):
+        self.num_classes = num_classes
+        self.built = False
+
+    def __call__(self, x_input, return_logits=False):
+        """Constructs model and return probabilities for given input."""
+        reuse = True if self.built else None
+        with slim.arg_scope(inception.inception_v3_arg_scope()):
+            _, end_points = inception.inception_v3(
+                x_input, num_classes=self.num_classes, is_training=False,
+                reuse=reuse)
+        self.built = True
+        self.logits = end_points['Logits']
+        output = end_points['Predictions']
+        # Strip off the extra reshape op at the output
+        self.probs = output.op.inputs[0]
+        return self.probs
+
+    def get_logits(self, x_input):
+        return self(x_input, return_logits=True)
+
+    def get_probs(self, x_input):
+        return self(x_input)
+
+def _top_1_accuracy(logits, labels):
+    return tf.reduce_mean(
+        tf.cast(tf.nn.in_top_k(logits, labels, 1), tf.float32))
