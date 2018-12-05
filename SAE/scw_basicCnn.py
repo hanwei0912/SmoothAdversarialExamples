@@ -14,7 +14,7 @@ import logging
 import numpy as np
 # import pdb
 import os
-from cleverhans.attacks_hw import Clip_version_old
+from cleverhans.attacks_SAE import SmoothCarliniWagnerL2
 from cleverhans.utils import AccuracyReport
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils import set_log_level
@@ -168,10 +168,6 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         gc.garbage
     end = time.clock()
     print(end-start)
-    f.write("{0},".format(str(end-start)))
-    f.write("{0},".format(str(cw.iteration)))
-    f.write("{0}\n".format(str(cw.terminate_situation)))
-    f.close()
     # Close TF session
     sess.close()
 

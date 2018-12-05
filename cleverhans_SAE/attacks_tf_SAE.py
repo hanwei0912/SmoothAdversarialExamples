@@ -338,7 +338,7 @@ class SmoothCarliniWagnerL2CG(object):
         o_bestl2 = np.array(o_bestl2)
         return o_bestattack
 
-class Clip_version_eig_norm(object):
+class SmoothCarliniWagnerL2(object):
 
     def __init__(self, sess, model, batch_size, confidence,
                  targeted, learning_rate,

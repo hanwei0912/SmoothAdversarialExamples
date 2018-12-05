@@ -117,7 +117,7 @@ class SmoothCarliniWagnerL2CG(Attack):
         self.clip_min = clip_min
         self.clip_max = clip_max
 
-class Clip_version_eig_norm(Attack):
+class SmoothCarliniWagnerL2(Attack):
     """
     This attack was originally proposed by Carlini and Wagner. It is an
     iterative attack that finds adversarial examples on many defenses that
@@ -133,7 +133,7 @@ class Clip_version_eig_norm(Attack):
         Note: the model parameter should be an instance of the
         cleverhans.model.Model abstraction provided by CleverHans.
         """
-        super(Clip_version_eig_norm, self).__init__(model, sess)
+        super(SmoothCarliniWagnerL2, self).__init__(model, sess)
 
         import tensorflow as tf
         self.feedable_kwargs = {'y': tf.float32,
@@ -190,7 +190,7 @@ class Clip_version_eig_norm(Attack):
         :param eig_num: number of the eig value
         """
         import tensorflow as tf
-        from .attacks_SAE import Clip_version_eig_norm as CLV2
+        from .attacks_SAE import SmoothCarliniWagnerL2 as CLV2
         self.parse_params(**kwargs)
 
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
