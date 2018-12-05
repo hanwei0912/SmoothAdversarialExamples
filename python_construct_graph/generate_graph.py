@@ -11,9 +11,11 @@ import scipy.io as si
 from PIL import Image
 from numpy import linalg as LA
 from knn import construct_imagenet_graph
+from knn import construct_mnist_graph
+#from cleverhans.utils_mnist import data_mnist
 from load_data import *
 
-def main():
+def imagenet():
     path_name = "../dataset/images" # path of your data
     lamubda = 300
     alpha   = 0.997
@@ -28,5 +30,30 @@ def main():
         si.savemat(save_name,{'A':A})
     return
 
+def mnist():
+    X_train, Y_train, X_test, Y_test = data_mnist(train_start=0,
+                                                  train_end=60000,
+                                                  test_start=0,
+                                                  test_end=10000)
+    lamudba = 10
+    alpha   = 0.95
+    eig_num = 300
+    shape = X_test.shape
+    for i in range(1):
+        A = np.ones((10000,shape[1]*shape[2],eig_num),dtype=float)
+        At = np.ones((10000,eig_num,shape[1]*shape[2]),dtype=float)
+        for j in range(10000): # save in 100 batch in case the memory exhaust
+            ind = i*10000 +j
+            img = X_test[ind]
+            adv_A, adv_At = construct_mnist_graph(img,lamudba,alpha,eig_num)
+            A[j] = adv_A
+            At[j]= adv_At
+        save_path = "../dataset/A"
+        file_name = "mnist_"+str(lamubda)+"_"+str(alpha)+"_"+str(i)+".mat"
+        save_name = os.path.join(save_path,file_name)
+        si.savemat(save_name,{'adv_A':A,'adv_At':At})
+    return
+
+
 if __name__ == '__main__':
-    main()
+    mnist()

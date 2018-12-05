@@ -13,101 +13,15 @@ import numpy as np
 from PIL import Image
 from cleverhans.model import Model
 import scipy.io as si
+from basic_cnn_models import InceptionModel
+from load_data import load_images, save_images
 
 import tensorflow as tf
 from tensorflow.contrib.slim.nets import inception
 
 slim = tf.contrib.slim
 
-
 FLAGS = tf.flags.FLAGS
-
-def load_images(input_dir, metadata_file_path,  batch_shape):
-    """Read png images from input directory in batches.
-    Args:
-      input_dir: input directory
-      batch_shape: shape of minibatch array,
-      i.e. [batch_size, height, width, 3]
-    Yields:
-      filenames: list file names without path of each image
-        Lenght of this list could be less than batch_size, in this case only
-        first few images of the result are elements of the minibatch.
-      images: array with all images from this batch
-    """
-    with open(metadata_file_path) as input_file:
-        reader = csv.reader(input_file)
-        header_row = next(reader)
-        rows = list(reader)
-
-    images = np.zeros(batch_shape)
-    labels = np.zeros(batch_shape[0], dtype=np.int32)
-    row_idx_true_label = header_row.index('TrueLabel')
-    filenames = []
-    idx = 0
-    batch_size = batch_shape[0]
-    for filepath in tf.gfile.Glob(os.path.join(input_dir, '*.png')):
-        with tf.gfile.Open(filepath) as f:
-            image = np.array(Image.open(f).convert('RGB')
-                             ).astype(np.float) / 255.0
-        # Images for inception classifier are normalized to be in [-1, 1] interval.
-        images[idx, :, :, :] = image * 2.0 - 1.0
-        row = rows[idx]
-        labels[idx] = int(row[row_idx_true_label])
-        filenames.append(os.path.basename(filepath))
-        idx += 1
-        if idx == batch_size:
-            yield filenames, images, labels
-            filenames = []
-            images = np.zeros(batch_shape)
-            idx = 0
-    if idx > 0:
-        yield filenames, images, labels
-
-
-def save_images(images, filenames, output_dir):
-    """Saves images to the output directory.
-    Args:
-      images: array with minibatch of images
-      filenames: list of filenames without path
-        If number of file names in this list less than number of images in
-        the minibatch then only first len(filenames) images will be saved.
-      output_dir: directory where to save images
-    """
-    for i, filename in enumerate(filenames):
-        # Images for inception classifier are normalized to be in [-1, 1] interval,
-        # so rescale them back to [0, 1].
-        with tf.gfile.Open(os.path.join(output_dir, filename), 'w') as f:
-            img = (((images[i, :, :, :] + 1.0) * 0.5) * 255.0).astype(np.uint8)
-            Image.fromarray(img).save(f, format='PNG')
-
-
-class InceptionModel(Model):
-    """Model class for CleverHans library."""
-
-    def __init__(self, num_classes):
-        self.num_classes = num_classes
-        self.built = False
-
-    def __call__(self, x_input, return_logits=False):
-        """Constructs model and return probabilities for given input."""
-        reuse = True if self.built else None
-        with slim.arg_scope(inception.inception_v3_arg_scope()):
-            _, end_points = inception.inception_v3(
-                x_input, num_classes=self.num_classes, is_training=False,
-                reuse=reuse)
-        self.built = True
-        self.logits = end_points['Logits']
-        output = end_points['Predictions']
-        # Strip off the extra reshape op at the output
-        self.probs = output.op.inputs[0]
-        return self.probs
-
-    def get_logits(self, x_input):
-        return self(x_input, return_logits=True)
-
-    def get_probs(self, x_input):
-        return self(x_input)
-
 
 def main(_):
     # Images for inception classifier are normalized to be in [-1, 1] interval,
@@ -130,10 +44,10 @@ def main(_):
     preds = model(x_input)
     tf_model_load(sess, FLAGS.checkpoint_path)
 
-    cw = SmoothCarliniWagnerL2CG(model, back='tf', sess=sess)
+    cw = SmoothCarliniWagnerL2CG(model, sess=sess)
     # Run computation
 
-    for filenames, images, labels in load_images(FLAGS.input_dir, FLAGS.metadata_file_path, batch_shape):
+    for images, _, labels, filenames in load_images(FLAGS.input_dir, FLAGS.input_dir, FLAGS.metadata_file_path, batch_shape):
         y_labels = np.zeros((FLAGS.batch_size,num_classes))
         for i_y in range(FLAGS.batch_size):
             y_labels[i_y][labels[i_y]]=1
@@ -162,7 +76,6 @@ def main(_):
                      'A': A}
         x_adv = cw.generate_np(images,
                                **cw_params)
-        pdb.set_trace()
         elapsed = (time.time() - start)
         print("Time used:", elapsed)
         save_images(x_adv, filenames, FLAGS.output_dir)

@@ -7,11 +7,9 @@ import csv
 import pdb
 
 from cleverhans.attacks_SAE import SmoothBasicIterativeMethodCG
-#from cleverhans.attacks import BasicIterativeMethod
 import numpy as np
 from PIL import Image
 from cleverhans.utils_tf import tf_model_load
-# from PIL import Image
 from cleverhans.model import Model
 import scipy.io as si
 import time
@@ -64,15 +62,10 @@ def main(_):
     # Images for inception classifier are normalized to be in [-1, 1] interval,
     # eps is a difference between pixels so it should be in [0, 2] interval.
     # Renormalizing epsilon from [0, 255] to [0, 2].
-    # eps = 2.0 * FLAGS.max_epsilon / 255.0
     batch_shape = [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, 3]
     num_classes = 1001
 
     tf.logging.set_verbosity(tf.logging.INFO)
-    # path_name = "/nfs/pyrex/raid6/hzhang/SmoothPerturbation/time/time_log.txt"
-    # f = open(path_name, "a")
-    # f.write("ImageNet,InceptionModel,clip_verion_debug,")
-    # f.write("100,1,16,20,")
 
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -94,7 +87,6 @@ def main(_):
                'eps_iter':3,
                'clip_min': -1.,
                'clip_max': 1.}
-    #adv_x = bim.generate(x_input, **bim_params)
     adv_x = bim.generate(x_input, adv_A, **bim_params)
     # Run computation
 
@@ -119,18 +111,11 @@ def main(_):
 
 
         #preds_adv = model.get_probs(adv_x) 
-        #pdb.set_trace()
         x_adv = sess.run(adv_x,feed_dict={x_input:images,adv_A:A})
-        #pdb.set_trace()
-        print('done 16')
         save_images(x_adv, filenames, FLAGS.output_dir)
     end = time.clock()
     print(end - start)
-    # f.write("%s," % str(end-start))
-    # f.write("%s," % str(cw.iteration*16/1000))
-    # f.write("%s," % str(cw.terminate_situation))
 
-    # f.close()
 
 
 if __name__ == '__main__':

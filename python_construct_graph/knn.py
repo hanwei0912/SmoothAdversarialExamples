@@ -150,11 +150,11 @@ def construct_mnist_graph(img,lamuda,alpha,eig_num):
     pit: eig_num*N matrix
     """
     shape=img.shape
-    Ha = np.ones((4,shape[0],shape[1],shape[2]))
+    img = np.reshape(img,(shape[0],shape[1]))
     S, ind = construct_sparse(img, lamuda)
     # calculate eigen values
     w, v = LA.eig(S.todense())
-    U= v[0:eig_num,0:eig_num]
+    U= v[:,0:eig_num]
     V =w[0:eig_num]
     # calculate the smooth matrix
     h = np.power(1-alpha*V,-1)

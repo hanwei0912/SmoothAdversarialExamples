@@ -7,8 +7,6 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 from tensorflow.python.platform import flags
-import csv
-from numpy import genfromtxt
 import scipy.io as si
 import time
 
@@ -25,28 +23,7 @@ from basic_cnn_models import make_basic_cnn
 
 FLAGS = flags.FLAGS
 
-FLAGS = flags.FLAGS
-file_str = "mnist_BasicCnn_fgsm_"
-data_save_dir = "/nfs/pyrex/raid6/hzhang/number_one/data"
-data_save_dir1 = "/nfs/pyrex/raid6/hzhang/SmoothPerturbation"
-data_save_dir2 = "/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/mnist"
-
-def data_to_mnist(test_start,test_end):
-    # keep the test data in same order
-    file_name = "X_test.mat"
-    load_path = os.path.join(data_save_dir1,file_name)
-    data=si.loadmat(load_path)
-    X_test = data['X_test']
-    file_name = "Y_test.mat"
-    load_path = os.path.join(data_save_dir1,file_name)
-    data=si.loadmat(load_path)
-    Y_test = data['Y_test']
-    print('X_test shape:', X_test.shape)
-    print('Y_test shape:', Y_test.shape)
-
-    return X_test, Y_test
-
-def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
+def mnist_tutorial_bim(train_start=0, train_end=60000, test_start=0,
                       test_end=10000, viz_enabled=True, nb_epochs=6,
                       batch_size=128, nb_classes=10, source_samples=100,
                       learning_rate=0.001, attack_iterations=100,
@@ -89,9 +66,8 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     set_log_level(logging.DEBUG)
 
     # Get MNIST test data
-    X_test, Y_test = data_to_mnist(test_start=test_start,
+    X_test, Y_test = data_mnist(test_start=test_start,
                                    test_end=test_end)
-    
 
     # Define input TF placeholder
     x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols, channels))
@@ -107,7 +83,6 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     ###########################################################################
     # Training the model using TensorFlow
     ###########################################################################
-    
     # Train an MNIST model
     train_params = {
         'nb_epochs': nb_epochs,
@@ -119,7 +94,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
     rng = np.random.RandomState([2017, 8, 30])
     # check if we've trained before, and if we have, use that pre-trained model
-    tf_model_load(sess,'/udd/hzhang/Primary_experiments/mnist/models/basic_cnn.ckpt')
+    tf_model_load(sess,'../models/basic_cnn.ckpt')
 
     # Evaluate the accuracy of the MNIST model on legitimate test examples
     eval_params = {'batch_size': batch_size}
@@ -147,36 +122,12 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
     rng = np.random.RandomState([2017, 8, 30])
     #preds_adv = model.get_probs(adv_x) 
     for A_i in range(100):
-        yname = "y"
-        adv_ys = None
-        str_t = "UV/mnist_"
-        # get the matrix A
-        file_name = str_t + "adv_U_"+str((A_i+1)*100)+"_"+namuda+".mat"
-        file_path = os.path.join(data_save_dir, file_name)
-        Aa=si.loadmat(file_path)
-        U = Aa['u']
-        U=np.array(U,dtype=np.float32)
-        file_name = str_t + "adv_V_"+str((A_i+1)*100)+"_"+namuda+".mat"
-        file_path = os.path.join(data_save_dir, file_name)
-        Aa=si.loadmat(file_path)
-        V = Aa['v']
-        V=np.array(V,dtype=np.float32)
-        source_samples = 100
-        h =np.power(1-alpha*V,-1)
-        hh = np.sqrt(h)
-        H = np.zeros((hh.shape[0],hh.shape[1],hh.shape[1]))
-        for i in range(V.shape[0]):
-           H[i]=np.diag(hh[i]) 
-        pi=np.matmul(U,H)
-        pi=np.array(pi,dtype=np.float32)
-        Aa=np.matmul(pi,np.transpose(pi,(0,2,1)))
-        z=np.sum(Aa,axis=1)
-        z=z.reshape((100,1,784))
-        zz=np.tile(z,[1,300,1])
-        pit = np.transpose(pi,(0,2,1))/zz
-        pit=np.array(pit,dtype=np.float32)
-        # set params
-
+        save_path = "../dataset/A"
+        file_name = "mnist_"+str(lamubda)+"_"+str(alpha)+"_"+str(A_i)+".mat"
+        save_name = os.path.join(save_path,file_name)
+        A = si.loadmat(save_name)
+        pi = A['adv_A']
+        pit = A['adv_At']
         start = time.time()
         start_p = (A_i)*100
         end_p = (A_i+1)*100
@@ -190,12 +141,10 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
         pdb.set_trace()
         
         elapsed = (time.time() - start)
-        file_name = "smooth/mnist_BasicCnn_sbim_"+str((A_i+1)*100)+str(eps)+"_"+str(eps_iter)+"_adv_x.mat"
-        save_path=os.path.join(data_save_dir2, file_name)
+        data_save_dir = "../dataset/smooth/"
+        file_name = "mnist_BasicCnn_sbim_"+str((A_i+1)*100)+str(eps)+"_"+str(eps_iter)+"_adv_x.mat"
+        save_path=os.path.join(data_save_dir, file_name)
         si.savemat(save_path,{'adv_x':adv})
-        #file_name = "smooth/mnist_BasicCnn_sbim_"+str((A_i+1)*100)+"_adv_pre.mat"
-        #save_path=os.path.join(data_save_dir1, file_name)
-        #si.savemat(save_path,{'adv_pre':pre_adv})
         eval_params = {'batch_size': source_samples}
         adv_accuracy = 1- model_eval(sess,x,y,preds,adv,adv_y,args=eval_params)
 
@@ -223,7 +172,7 @@ def mnist_tutorial_cw(train_start=0, train_end=60000, test_start=0,
 
 
 def main(argv=None):
-    mnist_tutorial_cw(viz_enabled=FLAGS.viz_enabled,
+    mnist_tutorial_bim(viz_enabled=FLAGS.viz_enabled,
                       nb_epochs=FLAGS.nb_epochs,
                       batch_size=FLAGS.batch_size,
                       nb_classes=FLAGS.nb_classes,
