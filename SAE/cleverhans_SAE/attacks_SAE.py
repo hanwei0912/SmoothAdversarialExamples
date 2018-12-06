@@ -463,15 +463,18 @@ class SmoothBasicIterativeMethodCG(Attack):
             noeq_int = tf.to_int32(noeq)
             noeq_res = tf.equal(tf.reduce_sum(noeq_int), tf.reduce_sum(tf.ones_like(noeq_int)))
 
-            def f_false(modifier):
-                smo_mod = CG(Aa, modifier, shape[0], shape)
-                return smo_mod
+            def f_false(modifier, div_z):
+                smo_mod = CG(Aa, modifier, shape)
+                smo_mod = Norm_CG(smo_mod,div_z)
+                return smo_mod, div_z
 
-            def f_true(mm):
-                smo_mod = tf.reshape(mm,shape)
-                return smo_mod
+            def f_true(modifier, div_z):
+                z_d = tf.ones_like(modifier)
+                div_z = CG(Aa, z_d, shape)
+                return modifier, div_z
 
-            smo_mod = tf.cond(noeq_res, lambda: f_true(modifier),lambda: f_false(modifier))
+            smo_mod, div_z = tf.cond(noeq_res, lambda: f_true(modifier, div_z),lambda:
+                    f_false(modifier, div_z))
 
             self.modifier =tf.reshape(modifier,shape)
             eta = smo_mod

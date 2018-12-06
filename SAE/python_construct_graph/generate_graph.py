@@ -35,17 +35,17 @@ def mnist():
                                                   train_end=60000,
                                                   test_start=0,
                                                   test_end=10000)
-    lamudba = 10
+    lamubda = 10
     alpha   = 0.95
     eig_num = 300
     shape = X_test.shape
-    for i in range(1):
-        A = np.ones((10000,shape[1]*shape[2],eig_num),dtype=float)
-        At = np.ones((10000,eig_num,shape[1]*shape[2]),dtype=float)
-        for j in range(10000): # save in 100 batch in case the memory exhaust
-            ind = i*10000 +j
+    for i in range(10):
+        A = np.ones((1000,shape[1]*shape[2],eig_num),dtype=float)
+        At = np.ones((1000,eig_num,shape[1]*shape[2]),dtype=float)
+        for j in range(1000): # save in 100 batch in case the memory exhaust
+            ind = i*1000 +j
             img = X_test[ind]
-            adv_A, adv_At = construct_mnist_graph(img,lamudba,alpha,eig_num)
+            adv_A, adv_At = construct_mnist_graph(img,lamubda,alpha,eig_num)
             A[j] = adv_A
             At[j]= adv_At
         save_path = "../dataset/A"
