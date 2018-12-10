@@ -16,15 +16,16 @@ from knn import construct_mnist_graph
 from load_data import *
 
 def imagenet():
-    path_name = "../dataset/images" # path of your data
+    path_name = "../../dataset/images" # path of your data
     lamubda = 300
     alpha   = 0.997
     imgnames = load_imagenet_list(path_name)
     for imgname in imgnames:
+        pdb.set_trace()
         imgpath =os.path.join(path_name,imgname)
         img=load_imagenet_image(imgpath)
         A = construct_imagenet_graph(img,lamubda,alpha)
-        save_path = "../dataset/A" # path of your saving archive
+        save_path = "../../dataset/A" # path of your saving archive
         file_name = imgname+"_"+str(lamubda)+"_"+str(alpha)+".mat"
         save_name = os.path.join(save_path,file_name)
         si.savemat(save_name,{'A':A})
@@ -40,10 +41,10 @@ def mnist():
     eig_num = 300
     shape = X_test.shape
     for i in range(10):
-        A = np.ones((1000,shape[1]*shape[2],eig_num),dtype=float)
-        At = np.ones((1000,eig_num,shape[1]*shape[2]),dtype=float)
-        for j in range(1000): # save in 100 batch in case the memory exhaust
-            ind = i*1000 +j
+        A = np.ones((100,shape[1]*shape[2],eig_num),dtype=float)
+        At = np.ones((100,eig_num,shape[1]*shape[2]),dtype=float)
+        for j in range(100): # save in 100 batch in case the memory exhaust
+            ind = i*100 +j
             img = X_test[ind]
             adv_A, adv_At = construct_mnist_graph(img,lamubda,alpha,eig_num)
             A[j] = adv_A
@@ -56,4 +57,4 @@ def mnist():
 
 
 if __name__ == '__main__':
-    mnist()
+    imagenet()

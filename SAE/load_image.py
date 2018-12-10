@@ -22,7 +22,7 @@ def load_imagenet_list(imageDir):
 
 def load_imagenet_image(file_name):
     img = np.array(Image.open(file_name).convert('RGB')).astype(np.float) / 255.0
-    img = img * 2.0 - 1.0
+    #img = img * 2.0 - 1.0
     return img
 
 def maybe_download_mnist_file(file_name, datadir=None, force=False):
