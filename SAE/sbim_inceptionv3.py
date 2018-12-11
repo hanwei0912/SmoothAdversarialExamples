@@ -6,7 +6,7 @@ import os
 import csv
 import pdb
 
-from cleverhans.attacks_SAE import SmoothBasicIterativeMethodCG
+from attacks_SAE import SmoothBasicIterativeMethod
 import numpy as np
 from PIL import Image
 from cleverhans.utils_tf import tf_model_load
@@ -15,6 +15,7 @@ import scipy.io as si
 import time
 from basic_cnn_models import InceptionModel
 from load_data import load_images, save_images
+from knn import construct_imagenet_graph
 
 import tensorflow as tf
 from tensorflow.contrib.slim.nets import inception
@@ -80,36 +81,21 @@ def main(_):
     preds = model(x_input)
     tf_model_load(sess, FLAGS.checkpoint_path)
 
-    bim = SmoothBasicIterativeMethodCG(model,sess=sess)
+    bim = SmoothBasicIterativeMethod(model,sess=sess)
     eps=5/255.0
     bim_params = {'eps': 10,
                'ord':2,
                'eps_iter':3,
                'clip_min': -1.,
-               'clip_max': 1.}
+               'clip_max': 1.,
+               'flag': True}
     adv_x = bim.generate(x_input, adv_A, **bim_params)
     # Run computation
 
     for images, _, labels, filenames in load_images(FLAGS.input_dir, FLAGS.input_dir, FLAGS.metadata_file_path, batch_shape):
-        y_labels = np.zeros((FLAGS.batch_size, num_classes))
-        for i_y in range(FLAGS.batch_size):
-            y_labels[i_y][labels[i_y]] = 1
-        # load matrix A
-
-        def load_A(filenames, batch_shape, img_size, namuda):
-            data_dir = "../dataset/A/"
-            n_f = len(filenames)
-            A = np.zeros((batch_shape, 4, 299, 299, 3))
-            for i in range(n_f):
-                name_p = data_dir+filenames[i]+"_"+namuda+"_0.997.mat"
-                data = si.loadmat(name_p)
-                A[i] = data['A']
-            return A
-        A = load_A(filenames, FLAGS.batch_size,
-                   FLAGS.image_height*FLAGS.image_width, '300')
-        A = np.array(A, dtype=np.float32)
-
-
+        lamubda=10
+        alpha  =0.95
+        A = construct_imagenet_graph((img+1.0)*0.5,lamuda,alpha)
         #preds_adv = model.get_probs(adv_x) 
         x_adv = sess.run(adv_x,feed_dict={x_input:images,adv_A:A})
         save_images(x_adv, filenames, FLAGS.output_dir)

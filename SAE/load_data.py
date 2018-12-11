@@ -7,8 +7,10 @@ import csv
 import pdb
 import numpy as np
 from PIL import Image
+from cleverhans import dataset
 import scipy.io as si
 import tensorflow as tf
+import tempfile
 
 def load_images(input_dir, ori_input_dir, metadata_file_path,  batch_shape):
     """Read png images from input directory in batches.
@@ -74,3 +76,22 @@ def save_images(images, filenames, output_dir):
     with tf.gfile.Open(os.path.join(output_dir, filename), 'w') as f:
       img = (((images[i, :, :, :] + 1.0) * 0.5) * 255.0).astype(np.uint8)
       Image.fromarray(img).save(f, format='PNG')
+
+def maybe_download_mnist_file(file_name, datadir=None, force=False):
+  url = os.path.join('http://yann.lecun.com/exdb/mnist/', file_name)
+  return dataset.maybe_download_file(url, datadir=None, force=False)
+
+
+def download_and_parse_mnist_file(file_name, datadir=None, force=False):
+  return dataset.download_and_parse_mnist_file(file_name, datadir=None,
+                                               force=False)
+
+
+def data_mnist(datadir=tempfile.gettempdir(), train_start=0,
+               train_end=60000, test_start=0, test_end=10000):
+  mnist = dataset.MNIST(train_start=train_start,
+                        train_end=train_end,
+                        test_start=test_start,
+                        test_end=test_end,
+                        center=False)
+  return mnist.get_set('train') + mnist.get_set('test')

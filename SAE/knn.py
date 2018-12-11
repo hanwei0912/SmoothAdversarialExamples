@@ -132,7 +132,7 @@ def construct_imagenet_graph(img,lamuda,alpha):
     for dim_i in range(shape[2]):
         img_i = np.array(img[:,:,dim_i],dtype=np.float32)
         S, ind = construct_sparse(img_i, lamuda)
-        Aa = ss.eye(shape[0]*shape[1]) - alpha * S
+        Aa = - alpha * S
         A = graph_matrix(Aa,ind)
         A = np.reshape(A,(4,shape[0],shape[1]))
         Ha[:,:,:,dim_i] = A
@@ -152,20 +152,24 @@ def construct_mnist_graph(img,lamuda,alpha,eig_num):
     shape=img.shape
     img = np.reshape(img,(shape[0],shape[1]))
     S, ind = construct_sparse(img, lamuda)
-    # calculate eigen values
-    w, v = LA.eig(S.todense())
-    U= v[:,0:eig_num]
-    V =w[0:eig_num]
-    # calculate the smooth matrix
-    h = np.power(1-alpha*V,-1)
-    hh = np.sqrt(h)
-    H = np.diag(hh)
-    pi = np.matmul(U,H)
-    pi = np.array(pi,dtype=np.float32)
-    # normalize
-    A = np.matmul(pi,np.transpose(pi))
+    # calculate the 
+    A = ss.eye(shape[0]*shape[1]) - alpha * S
     z = np.sum(A,axis=0)
-    pit = np.transpose(pi)/z
-    pit = np.array(pit,dtype=np.float32)
-    return pi, pit
+    A = A / z
+    # calculate eigen values
+    #w, v = LA.eig(S.todense())
+    #U= v[:,0:eig_num]
+    #V =w[0:eig_num]
+    ## calculate the smooth matrix
+    #h = np.power(1-alpha*V,-1)
+    #hh = np.sqrt(h)
+    #H = np.diag(hh)
+    #pi = np.matmul(U,H)
+    #pi = np.array(pi,dtype=np.float32)
+    ## normalize
+    #A = np.matmul(pi,np.transpose(pi))
+    #z = np.sum(A,axis=0)
+    #pit = np.transpose(pi)/z
+    #pit = np.array(pit,dtype=np.float32)
+    return A
 
