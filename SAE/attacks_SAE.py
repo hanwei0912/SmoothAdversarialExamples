@@ -163,7 +163,7 @@ class SmoothBasicIterativeMethod(Attack):
         :param clip_max: (optional float) Maximum input component value
         """
         import tensorflow as tf
-        from utils_SAE import CG
+        from utils_SAE import CG, Norm_CG
         from cleverhans.attacks import FastGradientMethod
 
 
@@ -219,7 +219,6 @@ class SmoothBasicIterativeMethod(Attack):
                     div_z = CG(Aa, z_d, shape)
                     return modifier, div_z
 
-                pdb.set_trace()
                 smo_mod, div_z = tf.cond(noeq_res, lambda: f_true(modifier, div_z),lambda:
                         f_false(modifier, div_z))
 

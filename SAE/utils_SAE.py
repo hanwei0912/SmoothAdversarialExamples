@@ -15,7 +15,7 @@ from cleverhans import utils
 
 
 def multi_sparse(mod, A, shape):
-    im_mod = tf.pad(im_mod, paddings =[[0,0],[1,1],[1,1],[0,0]],mode="CONSTANT")
+    im_mod = tf.pad(mod, paddings =[[0,0],[1,1],[1,1],[0,0]],mode="CONSTANT")
     im_r = tf.slice(im_mod, [0, 0, 1, 0], [shape[0], shape[1], shape[2], shape[3]])
     im_l = tf.slice(im_mod, [0, 2, 1, 0], [shape[0], shape[1], shape[2], shape[3]])
     im_u = tf.slice(im_mod, [0, 1, 0, 0], [shape[0], shape[1], shape[2], shape[3]])
