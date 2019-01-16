@@ -266,3 +266,4 @@ class InceptionModel(Model):
 def _top_1_accuracy(logits, labels):
     return tf.reduce_mean(
         tf.cast(tf.nn.in_top_k(logits, labels, 1), tf.float32))
+
