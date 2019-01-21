@@ -95,3 +95,8 @@ def data_mnist(datadir=tempfile.gettempdir(), train_start=0,
                         test_end=test_end,
                         center=False)
   return mnist.get_set('train') + mnist.get_set('test')
+
+def load_images_m():
+    X_test, Y_test = data_mnist(test_start=0,test_end=10000)
+    for i in range(10000):
+        yield X_test[i],Y_test[i]
