@@ -19,7 +19,7 @@ from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, tf_model_load
-from basic_cnn_models import make_basic_cnn
+from basic_cnn_models import *
 from load_data import *
 
 def mnist_attack():
@@ -42,8 +42,7 @@ def mnist_attack():
 
     x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols, channels))
     y = tf.placeholder(tf.float32, shape=(None, nb_classes))
-    At = tf.placeholder(tf.float32, shape=(None, eig_num, img_rows*img_cols))
-    A = tf.placeholder(tf.float32, shape=(None, img_rows*img_cols, eig_num))
+    A = tf.placeholder(tf.float32, shape=(None, img_rows*img_cols, img_rows*img_cols))
 
     # Define TF model graph
     model = make_basic_cnn()
@@ -57,11 +56,11 @@ def mnist_attack():
                   'eps_iter': 3,
                   'clip_min': 0.,
                   'clip_max': 1.}
-    adv_x = attack.generate(x, A, At, ** adv_params)
+    adv_x = attack.generate(x, A, ** adv_params)
     rng   = np.random.RandomState([2017,8,30])
     for images, y_label in load_images_m():
-        adv_A, adv_At = construct_mnist_graph(img,lamubda,alpha,eig_num)
-        x_adv = sess.run(adv_x, feed_dict={x:images, y:y_label, A:adv_A, At:adv_At})
+        Aa = construct_mnist_graph(img,lamubda,alpha,eig_num)
+        x_adv = sess.run(adv_x, feed_dict={x:images, y:y_label, A:Aa})
 
     sess.close()
     return
@@ -72,7 +71,9 @@ def imagnet_attack():
     num_classes = 1001
     lamubda = 10
     alpha = 0.95
-    checkpoint_path = ''
+    checkpoint_path = '../models/inception_v3.ckpt'
+    input_dir = '../dataset/images'
+    metadate_file_path = '../dataset/dev_dataset.csv'
 
     # Create TF session
     config = tf.ConfigProto()
@@ -94,9 +95,9 @@ def imagnet_attack():
                   'clip_max':1.,
                   'flag':True}
     adv_x = attack.generate(x_input, A, **adv_params)
+    pdb.set_trace()
 
-    for images, _, labels, filenames in load_images(FLAGS.input_dir, FLAGS.input_dir,
-            FLAGS.metadata_file_path, batch_shape):
+    for images, _, labels, filenames in load_images(input_dir, input_dir, metadata_file_path, batch_shape):
         Aa = construct_imagenet_graph((images+1.0)*0.5,lamubda,alpha)
         x_adv = sess.run(adv_x,feed_dict={x_input:images, A:Aa})
 
@@ -104,7 +105,7 @@ def imagnet_attack():
     return
 
 def main(_):
-    imagenet_attack()
+    imagnet_attack()
 
 if __name__ == '__main__':
     tf.app.run()
