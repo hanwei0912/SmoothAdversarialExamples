@@ -127,15 +127,16 @@ def construct_imagenet_graph(img,lamuda,alpha):
     alpha: parameter to control the smoothness
     A: k*M*M*3 smoothness matrix
     """
+    img = img[0]
     shape=img.shape
-    Ha = np.ones((4,shape[0],shape[1],shape[2]))
+    Ha = np.ones((1,4,shape[0],shape[1],shape[2]))
     for dim_i in range(shape[2]):
         img_i = np.array(img[:,:,dim_i],dtype=np.float32)
         S, ind = construct_sparse(img_i, lamuda)
         Aa = - alpha * S
         A = graph_matrix(Aa,ind)
         A = np.reshape(A,(4,shape[0],shape[1]))
-        Ha[:,:,:,dim_i] = A
+        Ha[0,:,:,:,dim_i] = A
     return Ha
 
 def construct_mnist_graph(img,lamuda,alpha,eig_num):

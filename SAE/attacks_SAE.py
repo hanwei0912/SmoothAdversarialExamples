@@ -201,6 +201,7 @@ class SmoothBasicIterativeMethod(Attack):
             shape = eta.get_shape().as_list()
             def f_sparse(eta,shape,Aa,div_z):
                 modifier = tf.reshape(eta,(shape[0],shape[1],shape[2],shape[3]))
+                Aa       = tf.reshape(Aa, (shape[0],4,shape[1],shape[2],shape[3]))
 
                 # zeros situation
                 nn = tf.reduce_sum(tf.multiply(modifier, modifier),axis=[1,2])
@@ -227,7 +228,7 @@ class SmoothBasicIterativeMethod(Attack):
                 return eta, div_z
 
             def f_dense(eta,shape,A,div_z):
-                pdb.set_trace()
+                A     = tf.reshape(A,(-1,shape[1]*shape[2],shape[1]*shape[2]))
                 eta_r = tf.reshape(eta,(-1,shape[3],shape[1]*shape[2]))
                 eta_r = tf.matmul(eta_r,A)
                 eta = tf.reshape(eta_r,(-1,shape[1],shape[2],shape[3]))
