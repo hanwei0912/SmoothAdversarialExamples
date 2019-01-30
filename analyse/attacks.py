@@ -4034,7 +4034,7 @@ class Clip_version_debug(Attack):
         :param clip_max: (optional float) Maximum input component value
         """
         import tensorflow as tf
-        from .attacks_tf_hw import Clip_version_debug as CLV2
+        from attacks_tf import Clip_version_debug as CLV2
         self.parse_params(**kwargs)
 
         A = kwargs['A']
@@ -4048,10 +4048,11 @@ class Clip_version_debug(Attack):
                       nb_classes, x.get_shape().as_list()[1:])
 
         def cv_wrap(x_val, y_val,A_val):
-            return np.array(attack.attack(x_val, y_val,A_val), dtype=np.float32)
-        wrap = tf.py_func(cv_wrap, [x, labels, A], tf.float32)
+            a,b = attack.attack(x_val,y_val,A_val)
+            return np.array(a, dtype=np.float32), np.array(b,dtype=np.float32)
+        wrap,b = tf.py_func(cv_wrap, [x, labels, A], (tf.float32, tf.float32))
 
-        return wrap
+        return wrap,b
 
     def parse_params(self, y=None, y_target=None, nb_classes=None,
                      batch_size=1, confidence=0,

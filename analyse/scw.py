@@ -7,8 +7,7 @@ import csv
 import pdb
 import time
 
-from cleverhans.attacks_hw import Clip_version_debug
-from cleverhans.attacks_hw import FastGradientMethod
+from attacks import Clip_version_debug
 from cleverhans.utils_tf import model_train, model_eval, tf_model_load
 import numpy as np
 from PIL import Image
@@ -63,38 +62,6 @@ def load_images(input_dir, metadata_file_path,  batch_shape):
             idx = 0
     if idx > 0:
         yield filenames, images, labels
-
-#def load_images(input_dir, metadata_file_path,  batch_shape):
-#    """Read png images from input directory in batches.
-#    Args:
-#      input_dir: input directory
-#      batch_shape: shape of minibatch array, i.e. [batch_size, height, width, 3]
-#    Yields:
-#      filenames: list file names without path of each image
-#        Lenght of this list could be less than batch_size, in this case only
-#        first few images of the result are elements of the minibatch.
-#      images: array with all images from this batch
-#    """
-#
-#    images = np.zeros(batch_shape)
-#    filenames = []
-#    idx = 0
-#    batch_size = batch_shape[0]
-#    for filepath in tf.gfile.Glob(os.path.join(input_dir, '*.png')):
-#        with tf.gfile.Open(filepath) as f:
-#            image = np.array(Image.open(f).convert('RGB')).astype(np.float) / 255.0
-#        # Images for inception classifier are normalized to be in [-1, 1] interval.
-#        images[idx, :, :, :] = image * 2.0 - 1.0
-#        filenames.append(os.path.basename(filepath))
-#        idx += 1
-#        if idx == batch_size:
-#            yield filenames, images
-#            filenames = []
-#            images = np.zeros(batch_shape)
-#            idx = 0
-#    if idx > 0:
-#        yield filenames, images
-
 
 def save_images(images, filenames, output_dir):
     """Saves images to the output directory.
@@ -183,7 +150,6 @@ def main(_):
         A = load_A(filenames, FLAGS.batch_size, FLAGS.image_height*FLAGS.image_width, '300.000000')
         A = np.array(A, dtype=np.float32)
 
-        start = time.time()
         cw_params = {'binary_search_steps': FLAGS.binary_search_steps,
                      'y': None,
                      'max_iterations': FLAGS.max_iteration,
@@ -193,11 +159,14 @@ def main(_):
                      'clip_min': -1.,
                      'clip_max': 1,
                      'A': A}
-        x_adv = cw.generate_np(images,
+        start = time.time()
+        x_adv, num = cw.generate_np(images,
                                **cw_params)
         elapsed = (time.time() - start)
-        print("Time used:", elapsed)
-        save_images(x_adv, filenames, FLAGS.output_dir)
+        print("Time used:", elapsed,'s')
+        save_name ='/nfs/nas4/data-hanwei/data-hanwei/SmoothPerturbation/iteration/'+filenames[0]+'_scw.mat'
+        si.savemat(save_name,{'num':num})
+        #save_images(x_adv, filenames, FLAGS.output_dir)
 
 
 if __name__ == '__main__':
@@ -225,7 +194,7 @@ if __name__ == '__main__':
     tf.flags.DEFINE_string(
         'checkpoint_path', '/nfs/pyrex/raid6/hzhang/2017-nips/models/inception_v3.ckpt', 'Path to checkpoint for inception network.')
     tf.flags.DEFINE_string(
-        'input_dir', '/nfs/pyrex/raid6/hzhang/2017-nips/images', 'Input directory with images.')
+        'input_dir', '/udd/hzhang/SmoothAdversarialExamples/dataset/images', 'Input directory with images.')
     path_save = '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/inceptionV3/'+str(args.learning_rate)
     folder = os.path.exists(path_save)
     if not folder:
@@ -239,7 +208,7 @@ if __name__ == '__main__':
     tf.flags.DEFINE_integer(
         'image_height', 299, 'Height of each input images.')
     tf.flags.DEFINE_integer(
-        'batch_size', 20, 'How many images process at one time.')
+        'batch_size', 1, 'How many images process at one time.')
     tf.flags.DEFINE_string(
         'metadata_file_path',
         '/nfs/pyrex/raid6/hzhang/2017-nips/dev_dataset_fail.csv',

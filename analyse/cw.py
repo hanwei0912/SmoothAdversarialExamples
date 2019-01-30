@@ -149,7 +149,6 @@ def main(_):
             # A = load_A(filenames,FLAGS.batch_size,FLAGS.image_height*FLAGS.image_width,'10.000000')
             # A = np.array(A,dtype=np.float32)
 
-        start = time.time()
         cw_params = {'binary_search_steps': FLAGS.binary_search_steps,
                      'y': y_labels,
                      'max_iterations': FLAGS.max_iteration,
@@ -158,10 +157,11 @@ def main(_):
                      'initial_const': FLAGS.initial_const,
                      'clip_min': -1.,
                      'clip_max': 1}
+        start = time.time()
         x_adv,num = cw.generate_np(images,
                                **cw_params)
         elapsed = (time.time() - start)
-        print("Time used:", elapsed)
+        print("Time used:", elapsed,'s')
         save_name = '/nfs/nas4/data-hanwei/data-hanwei/SmoothPerturbation/iteration/'+filenames[0]+'_cw.mat'
         si.savemat(save_name,{'num':num})
         #save_images(x_adv, filenames, FLAGS.output_dir)
