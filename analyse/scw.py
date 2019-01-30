@@ -186,7 +186,7 @@ if __name__ == '__main__':
     # tf.flags.DEFINE_integer('binary_search_steps', args.binary_search_steps,
     #                      'binary_search_steps for cw attack')
     tf.flags.DEFINE_float('confidence', 1, 'confidence for cw attack')
-    tf.flags.DEFINE_float('initial_const', 1, 'initial_const for cw attack')
+    tf.flags.DEFINE_float('initial_const', 100, 'initial_const for cw attack')
     tf.flags.DEFINE_integer('max_iteration', 100, 'max_iteration for cw attack')
     tf.flags.DEFINE_integer('binary_search_steps', 9,
                          'binary_search_steps for cw attack')

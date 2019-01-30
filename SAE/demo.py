@@ -104,14 +104,17 @@ def imagnet_attack():
 
     for images, _, labels, filenames in load_images(input_dir, input_dir, metadata_file_path, batch_shape):
         Aa = construct_imagenet_graph((images+1.0)*0.5,lamubda,alpha)
-        pdb.set_trace()
+        begin=time.time()
         x_adv = sess.run(adv_x,feed_dict={x_input:images, A:Aa})
+        end=time.time()
+        print('cost total': end-begin,'s')
+        pdb.set_trace()
 
     sess.close()
     return
 
 def main(_):
-    mnist_attack()
+    imagnet_attack()
 
 if __name__ == '__main__':
     tf.app.run()

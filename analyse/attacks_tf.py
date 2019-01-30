@@ -10,6 +10,7 @@ import numpy as np
 import pdb
 from six.moves import xrange
 import tensorflow as tf
+import time
 
 from cleverhans.compat import reduce_max
 from cleverhans.compat import reduce_mean, reduce_sum
@@ -752,27 +753,51 @@ class CarliniWagnerL2(object):
 
         prev = 1e6
         for iteration in range(self.MAX_ITERATIONS):
-          num_iter[0][outer_step] = iteration
-          # perform the attack
-          _, l, l2s, scores, nimg = self.sess.run([
-              self.train, self.loss, self.l2dist, self.output,
-              self.newimg
-          ])
+            num_iter[0][outer_step] = iteration
+            # perform the attack
+            begin = time.time()
+            _ = self.sess.run([self.train])
+            end = time.time()
+            print('train cost',end-begin,'s')
+            begin = time.time()
+            l = self.sess.run([self.loss])
+            end = time.time()
+            print('loss cost',end-begin,'s')
+            begin = time.time()
+            l2s = self.sess.run([self.l2dist])
+            end = time.time()
+            print('l2 cost',end-begin,'s')
+            begin = time.time()
+            scores = self.sess.run([self.output])
+            end = time.time()
+            print('output cost',end-begin,'s')
+            begin = time.time()
+            nimg = self.sess.run([self.newimg])
+            end = time.time()
+            print('newimg cost',end-begin,'s')
 
-          if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
-            _logger.debug(("    Iteration {} of {}: loss={:.3g} " +
-                           "l2={:.3g} f={:.3g}").format(
-                               iteration, self.MAX_ITERATIONS, l,
-                               np.mean(l2s), np.mean(scores)))
+            begin = time.time()
+            _, l, l2s, scores, nimg = self.sess.run([
+                self.train, self.loss, self.l2dist, self.output,
+                self.newimg
+            ])
+            end = time.time()
+            print('time cost',end-begin,'s')
 
-          # check if we should abort search if we're getting nowhere.
-          if self.ABORT_EARLY and \
-             iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
-            if l > prev * .9999:
-              msg = "    Failed to make progress; stop early"
-              _logger.debug(msg)
-              break
-            prev = l
+            if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
+              _logger.debug(("    Iteration {} of {}: loss={:.3g} " +
+                             "l2={:.3g} f={:.3g}").format(
+                                 iteration, self.MAX_ITERATIONS, l,
+                                 np.mean(l2s), np.mean(scores)))
+
+            # check if we should abort search if we're getting nowhere.
+            if self.ABORT_EARLY and \
+               iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
+              if l > prev * .9999:
+                msg = "    Failed to make progress; stop early"
+                _logger.debug(msg)
+                break
+              prev = l
 
         # adjust the best result found so far
         for e, (l2, sc, ii) in enumerate(zip(l2s, scores, nimg)):
@@ -2072,7 +2097,6 @@ class Clip_version_debug(object):
         #self.loss2 = tf.reduce_sum(self.l2dist)
         self.loss1 = tf.reduce_sum(self.const * loss1)
         self.loss = self.loss1 + self.loss2
-        self.loss_each = self.l2 + (self.const*loss1)
 
         # Setup the adam optimizer and keep track of variables we're creating
         start_vars = set(x.name for x in tf.global_variables())
@@ -2179,12 +2203,35 @@ class Clip_version_debug(object):
             for iteration in range(self.MAX_ITERATIONS):
                 num_iter[0][outer_step] = iteration
                 # perform the attack
-                _, l, l2s, scores, nimg, l_each = self.sess.run([self.train,
+                begin = time.time()
+                _ = self.sess.run([self.train])
+                end = time.time()
+                print('train cost',end-begin,'s')
+                begin = time.time()
+                l = self.sess.run([self.loss])
+                end = time.time()
+                print('loss cost',end-begin,'s')
+                begin = time.time()
+                l2s = self.sess.run([self.l2])
+                end = time.time()
+                print('l2 cost',end-begin,'s')
+                begin = time.time()
+                scores = self.sess.run([self.output])
+                end = time.time()
+                print('output cost',end-begin,'s')
+                begin = time.time()
+                nimg = self.sess.run([self.newimg])
+                end = time.time()
+                print('newimg cost',end-begin,'s')
+
+                begin = time.time()
+                _, l, l2s, scores, nimg = self.sess.run([self.train,
                                                          self.loss,
                                                          self.l2,
                                                          self.output,
-                                                         self.newimg,
-                                                         self.loss_each])
+                                                         self.newimg])
+                end = time.time()
+                print('all cost',end-begin,'s')
 
                 if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
                     _logger.debug(("    Iteration {} of {}: loss={:.3g} " +
@@ -2205,7 +2252,6 @@ class Clip_version_debug(object):
                         #print('stop from the l> prev')
                         break
                     prev = l
-                    prev_each =l_each
 
                 # adjust the best result found so far
                 for e, (l2, sc, ii) in enumerate(zip(l2s, scores, nimg)):
