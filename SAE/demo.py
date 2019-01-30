@@ -46,7 +46,8 @@ def mnist_attack():
     A       = tf.placeholder(tf.float32)
 
     # Define TF model graph
-    model = make_basic_cnn()
+    pdb.set_trace()
+    model = BasicCNNModel()
     preds = model(x)
     print("Defined TensorFlow model graph.")
     tf_model_load(sess,'../models/basic_cnn.ckpt')
@@ -90,6 +91,7 @@ def imagnet_attack():
     model = InceptionModel(num_classes)
     preds = model(x_input)
     tf_model_load(sess, checkpoint_path)
+    pdb.set_trace()
 
     attack = SmoothBasicIterativeMethod(model,sess=sess)
     adv_params = {'eps': 5/255,

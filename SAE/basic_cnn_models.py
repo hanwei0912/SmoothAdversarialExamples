@@ -8,6 +8,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+import pdb
 import tensorflow as tf
 from cleverhans.model import Model
 from tensorflow.contrib.slim.nets import inception
@@ -267,3 +268,20 @@ def _top_1_accuracy(logits, labels):
     return tf.reduce_mean(
         tf.cast(tf.nn.in_top_k(logits, labels, 1), tf.float32))
 
+
+class BasicCNNModel(Model):
+    def __init__(self):
+        self.model = make_basic_cnn()
+
+    def __call__(self, x_input, return_logits=False):
+        pdb.set_trace()
+        self.prods = self.model(x_input)
+        return self.prods
+
+    def get_logits(self,x_input):
+        self.layer = self.model.get_layer_names()
+        self.logits = self.model.get_layer(x_input,self.layer[-2])
+        return
+
+    def get_probs(self,x_input):
+        return
