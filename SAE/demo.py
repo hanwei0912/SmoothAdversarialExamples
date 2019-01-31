@@ -107,7 +107,7 @@ def imagnet_attack():
         begin=time.time()
         x_adv = sess.run(adv_x,feed_dict={x_input:images, A:Aa})
         end=time.time()
-        print('cost total': end-begin,'s')
+        print('cost total:', end-begin,'s')
         pdb.set_trace()
 
     sess.close()

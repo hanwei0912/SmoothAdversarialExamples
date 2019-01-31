@@ -277,7 +277,7 @@ class FastGradientMethod(Attack):
         # Parse and save attack-specific parameters
         assert self.parse_params(**kwargs)
 
-        from .attacks_tf_hw import fgm
+        from attacks_tf import fgm
 
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
@@ -5046,3 +5046,221 @@ class Clip_version_eig_imgnet(Attack):
         self.clip_min = clip_min
         self.clip_max = clip_max
         self.eig_num = eig_num
+
+class SmoothBasicIterativeMethodCG(Attack):
+
+    """
+    The Basic Iterative Method (Kurakin et al. 2016). The original paper used
+    hard labels for this attack; no label smoothing.
+    Paper link: https://arxiv.org/pdf/1607.02533.pdf
+    """
+
+    def __init__(self, model, back='tf', sess=None):
+        """
+        Create a BasicIterativeMethod instance.
+        Note: the model parameter should be an instance of the
+        cleverhans.model.Model abstraction provided by CleverHans.
+        """
+        super(SmoothBasicIterativeMethodCG, self).__init__(model, back, sess)
+        self.feedable_kwargs = {'eps': np.float32,
+                                'eps_iter': np.float32,
+                                'y': np.float32,
+                                'y_target': np.float32,
+                                'clip_min': np.float32,
+                                'clip_max': np.float32}
+        self.structural_kwargs = ['ord', 'nb_iter']
+
+        if not isinstance(self.model, Model):
+            self.model = CallableModelWrapper(self.model, 'probs')
+
+    def generate(self, x, Aa, **kwargs):
+        """
+        Generate symbolic graph for adversarial examples and return.
+        :param x: The model's symbolic inputs.
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+        import tensorflow as tf
+
+        # Parse and save attack-specific parameters
+        assert self.parse_params(**kwargs)
+
+        # Initialize loop variables
+        eta = 0
+
+        # Fix labels to the first model predictions for loss computation
+        model_preds = self.model.get_probs(x)
+        preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
+        if self.y_target is not None:
+            y = self.y_target
+            targeted = True
+        elif self.y is not None:
+            y = self.y
+            targeted = False
+        else:
+            y = tf.to_float(tf.equal(model_preds, preds_max))
+            y = tf.stop_gradient(y)
+            targeted = False
+
+        y_kwarg = 'y_target' if targeted else 'y'
+        fgm_params = {'eps': self.eps_iter, y_kwarg: y, 'ord': self.ord,
+                      'clip_min': self.clip_min, 'clip_max': self.clip_max}
+
+        A = Aa
+        self.A=A
+        for i in range(self.nb_iter):
+            FGM = FastGradientMethod(self.model, back=self.back,
+                                     sess=self.sess)
+            # Compute this step's perturbation
+            eta = FGM.generate(x + eta, **fgm_params) - x
+
+            shape = eta.shape
+            modifier = tf.reshape(eta,(shape[0],shape[1]*shape[2],shape[3]))
+            def multi_sparse(mod, A, batch_size, shape):
+                im_mod = tf.reshape(
+                    mod, (batch_size, shape[1], shape[2],shape[3]))
+                im_mod = tf.pad(im_mod, paddings=[[0, 0], [1, 1], [
+                                1, 1], [0, 0]], mode="CONSTANT")
+                im_r = tf.slice(im_mod, [0, 0, 1, 0], [batch_size, shape[1], shape[2], shape[3]])
+                im_l = tf.slice(im_mod, [0, 2, 1, 0], [batch_size, shape[1], shape[2], shape[3]])
+                im_u = tf.slice(im_mod, [0, 1, 0, 0], [batch_size, shape[1], shape[2], shape[3]])
+                im_d = tf.slice(im_mod, [0, 1, 2, 0], [batch_size, shape[1], shape[2], shape[3]])
+                im_r = tf.reshape(im_r, (batch_size, 1, shape[1]*shape[2], shape[3]))
+                im_l = tf.reshape(im_l, (batch_size, 1, shape[1]*shape[2], shape[3]))
+                im_u = tf.reshape(im_u, (batch_size, 1, shape[1]*shape[2], shape[3]))
+                im_d = tf.reshape(im_d, (batch_size, 1, shape[1]*shape[2], shape[3]))
+                im_a = tf.concat([im_r, im_l, im_u, im_d], 1)
+                A = tf.reshape(A, (batch_size, 4, shape[1]*shape[2], shape[3]))
+                smo = tf.multiply(A, im_a)
+                smo = tf.reduce_sum(smo, axis=1)
+                smo = tf.reshape(smo, (batch_size, shape[1]*shape[2], shape[3]))
+                smo_t = tf.add(smo, mod)
+                return smo_t
+
+            def while_condition(i, r, p, s, x): return tf.less(i, 50)
+
+            def body(i, r, p, s, x):
+                q = multi_sparse(p, self.A, shape[0], shape)
+                alpha_t = tf.div(s, tf.matmul(tf.transpose(p, [0, 2, 1]),q))
+                alpha_t = tf.map_fn(lambda x: tf.diag_part(x),alpha_t,dtype=tf.float32)
+                alpha =tf.tile(tf.reshape(alpha_t,[shape[0],1,shape[3]]),multiples=[1,shape[1]*shape[2],1])
+                x = tf.add(x, tf.multiply(alpha, p))
+                r = tf.subtract(r, tf.multiply(alpha, q))
+                t = tf.matmul(tf.transpose(r, [0, 2, 1]),r)
+                beta_t = tf.div(t, s)
+                beta_t = tf.map_fn(lambda x: tf.diag_part(x),beta_t,dtype=tf.float32)
+                beta = tf.tile(tf.reshape(beta_t,[shape[0],1,shape[3]]),multiples=[1,shape[1]*shape[2],1])
+                p = tf.add(r, tf.multiply(beta, p))
+                s = t
+                i = tf.add(i, 1)
+                return i, r, p, s, x
+
+            # zeros situation
+            nn = tf.matmul(tf.transpose(modifier, [0, 2, 1]), modifier)
+            oo = tf.zeros_like(nn)
+            noeq = tf.equal(nn, oo)
+            noeq_int = tf.to_int32(noeq)
+            noeq_res = tf.equal(tf.reduce_sum(noeq_int), tf.reduce_sum(tf.ones_like(noeq_int)))
+
+            def f_false(modifier):
+                i = tf.constant(0)
+                r = modifier - multi_sparse(modifier, self.A, shape[0], shape)
+                p = r
+                s = tf.matmul(tf.transpose(r, [0, 2, 1]), r)
+                x = modifier
+                i, r, p, s, smo_mod = tf.while_loop(
+                    while_condition, body, [i, r, p, s, x])
+                ## norm
+                z_d = tf.ones_like(modifier)
+                i = tf.constant(0)
+                r = z_d - multi_sparse(z_d, self.A, shape[0], shape)
+                p = r
+                s = tf.matmul(tf.transpose(r, [0, 2, 1]), r)
+                x = z_d
+                i, r, p, s, div_z = tf.while_loop(
+                    while_condition, body, [i, r, p, s, x])
+
+                smo_mod = tf.div(smo_mod, div_z)
+                smo_mod = tf.reshape(smo_mod, shape)
+                return smo_mod
+
+            def f_true(mm):
+                smo_mod = tf.reshape(mm,shape)
+                return smo_mod
+
+            smo_mod = tf.cond(noeq_res, lambda: f_true(modifier),lambda: f_false(modifier))
+
+            self.modifier =tf.reshape(modifier,shape)
+            eta = smo_mod
+
+            # Clipping perturbation eta to self.ord norm ball
+            if self.ord == np.inf:
+                eta = tf.clip_by_value(eta, -self.eps, self.eps)
+            elif self.ord in [1, 2]:
+                reduc_ind = list(xrange(1, len(eta.get_shape())))
+                if self.ord == 1:
+                    norm = tf.reduce_sum(tf.abs(eta),
+                                         reduction_indices=reduc_ind,
+                                         keep_dims=True)
+                elif self.ord == 2:
+                    norm = tf.sqrt(tf.reduce_sum(tf.square(eta),
+                                                 reduction_indices=reduc_ind,
+                                                 keep_dims=True))
+                eta = eta * self.eps / norm
+
+
+        # Define adversarial example (and clip if necessary)
+        adv_x = x + eta
+        if self.clip_min is not None and self.clip_max is not None:
+            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+        return adv_x
+
+    def parse_params(self, eps=0.3, eps_iter=0.05, nb_iter=10, y=None,
+                     ord=np.inf, clip_min=None, clip_max=None,
+                     y_target=None, **kwargs):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks
+        before saving them as attributes.
+        Attack-specific parameters:
+        :param eps: (required float) maximum distortion of adversarial example
+                    compared to original input
+        :param eps_iter: (required float) step size for each attack iteration
+        :param nb_iter: (required int) Number of attack iterations.
+        :param y: (optional) A tensor with the model labels.
+        :param y_target: (optional) A tensor with the labels to target. Leave
+                         y_target=None if y is also set. Labels should be
+                         one-hot-encoded.
+        :param ord: (optional) Order of the norm (mimics Numpy).
+                    Possible values: np.inf, 1 or 2.
+        :param clip_min: (optional float) Minimum input component value
+        :param clip_max: (optional float) Maximum input component value
+        """
+
+        # Save attack-specific parameters
+        self.eps = eps
+        self.eps_iter = eps_iter
+        self.nb_iter = nb_iter
+        self.y = y
+        self.y_target = y_target
+        self.ord = ord
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+
+        if self.y is not None and self.y_target is not None:
+            raise ValueError("Must not set both y and y_target")
+        # Check if order of the norm is acceptable given current implementation
+        if self.ord not in [np.inf, 1, 2]:
+            raise ValueError("Norm order must be either np.inf, 1, or 2.")
+
+        return True
