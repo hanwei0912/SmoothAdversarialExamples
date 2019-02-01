@@ -824,34 +824,34 @@ class CarliniWagnerL2(object):
         for iteration in range(self.MAX_ITERATIONS):
             num_iter[0][outer_step] = iteration
             # perform the attack
-            begin = time.time()
-            _ = self.sess.run([self.train])
-            end = time.time()
-            print('train cost',end-begin,'s')
-            begin = time.time()
-            l = self.sess.run([self.loss])
-            end = time.time()
-            print('loss cost',end-begin,'s')
-            begin = time.time()
-            l2s = self.sess.run([self.l2dist])
-            end = time.time()
-            print('l2 cost',end-begin,'s')
-            begin = time.time()
-            scores = self.sess.run([self.output])
-            end = time.time()
-            print('output cost',end-begin,'s')
-            begin = time.time()
-            nimg = self.sess.run([self.newimg])
-            end = time.time()
-            print('newimg cost',end-begin,'s')
+            #begin = time.time()
+            #_ = self.sess.run([self.train])
+            #end = time.time()
+            #print('train cost',end-begin,'s')
+            #begin = time.time()
+            #l = self.sess.run([self.loss])
+            #end = time.time()
+            #print('loss cost',end-begin,'s')
+            #begin = time.time()
+            #l2s = self.sess.run([self.l2dist])
+            #end = time.time()
+            #print('l2 cost',end-begin,'s')
+            #begin = time.time()
+            #scores = self.sess.run([self.output])
+            #end = time.time()
+            #print('output cost',end-begin,'s')
+            #begin = time.time()
+            #nimg = self.sess.run([self.newimg])
+            #end = time.time()
+            #print('newimg cost',end-begin,'s')
 
-            begin = time.time()
+            #begin = time.time()
             _, l, l2s, scores, nimg = self.sess.run([
                 self.train, self.loss, self.l2dist, self.output,
                 self.newimg
             ])
-            end = time.time()
-            print('time cost',end-begin,'s')
+            #end = time.time()
+            #print('time cost',end-begin,'s')
 
             if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
               _logger.debug(("    Iteration {} of {}: loss={:.3g} " +
@@ -2272,35 +2272,11 @@ class Clip_version_debug(object):
             for iteration in range(self.MAX_ITERATIONS):
                 num_iter[0][outer_step] = iteration
                 # perform the attack
-                begin = time.time()
-                _ = self.sess.run([self.train])
-                end = time.time()
-                print('train cost',end-begin,'s')
-                begin = time.time()
-                l = self.sess.run([self.loss])
-                end = time.time()
-                print('loss cost',end-begin,'s')
-                begin = time.time()
-                l2s = self.sess.run([self.l2])
-                end = time.time()
-                print('l2 cost',end-begin,'s')
-                begin = time.time()
-                scores = self.sess.run([self.output])
-                end = time.time()
-                print('output cost',end-begin,'s')
-                begin = time.time()
-                nimg = self.sess.run([self.newimg])
-                end = time.time()
-                print('newimg cost',end-begin,'s')
-
-                begin = time.time()
                 _, l, l2s, scores, nimg = self.sess.run([self.train,
                                                          self.loss,
                                                          self.l2,
                                                          self.output,
                                                          self.newimg])
-                end = time.time()
-                print('all cost',end-begin,'s')
 
                 if iteration % ((self.MAX_ITERATIONS // 10) or 1) == 0:
                     _logger.debug(("    Iteration {} of {}: loss={:.3g} " +
