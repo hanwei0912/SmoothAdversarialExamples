@@ -91,7 +91,6 @@ def imagnet_attack():
     model = InceptionModel(num_classes)
     preds = model(x_input)
     tf_model_load(sess, checkpoint_path)
-    pdb.set_trace()
 
     attack = SmoothBasicIterativeMethod(model,sess=sess)
     adv_params = {'eps': 5/255,
