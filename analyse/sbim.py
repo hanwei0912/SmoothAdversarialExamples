@@ -30,12 +30,12 @@ tf.flags.DEFINE_string(
     'Path to checkpoint for inception network.')
 
 tf.flags.DEFINE_string(
-    'input_dir', '/udd/hzhang/SmoothAdversarialExamples/dataset/images',
+    'input_dir', '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/test/images/plotimage',
     'Input directory with images.')
 
 tf.flags.DEFINE_string(
     'output_dir',
-    '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/test/Timages/sbim',
+    '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/test/images/sgd',
     'Output directory with images.')
 
 tf.flags.DEFINE_float(
@@ -172,12 +172,12 @@ def main(_):
     tf_model_load(sess, FLAGS.checkpoint_path)
 
     bim = SmoothBasicIterativeMethodCG(model,back='tf',sess=sess)
-    eps=5/255.0
+    eps=64
 # 2 epsi 8 iter 5  0.548
 # 4 epsi 10 iter 5 0.553
 # 4 epsi 10 iter 6
 # 2 epsi 8 iter 3
-    bim_params = {'eps': 10,
+    bim_params = {'eps': eps,
                'ord':2,
                'eps_iter':3,
                'clip_min': -1.,
@@ -211,7 +211,8 @@ def main(_):
         x_adv = sess.run(adv_x,feed_dict={x_input:images,adv_A:A})
         end = time.time()
         print('cost time:',end-begin,'s')
-        #save_images(x_adv, filenames, FLAGS.output_dir)
+        savenames = [str(eps)+"_"+filenames[0]]
+        save_images(x_adv, savenames, FLAGS.output_dir)
     # f.write("%s," % str(end-start))
     # f.write("%s," % str(cw.iteration*16/1000))
     # f.write("%s," % str(cw.terminate_situation))

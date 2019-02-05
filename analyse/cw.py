@@ -162,6 +162,7 @@ def main(_):
                                **cw_params)
         elapsed = (time.time() - start)
         print("Time used:", elapsed,'s')
+        pdb.set_trace()
         save_name = '/nfs/nas4/data-hanwei/data-hanwei/SmoothPerturbation/iteration/'+filenames[0]+'_cw.mat'
         si.savemat(save_name,{'num':num})
         #save_images(x_adv, filenames, FLAGS.output_dir)

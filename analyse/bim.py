@@ -29,11 +29,11 @@ tf.flags.DEFINE_string(
     'checkpoint_path', '/nfs/pyrex/raid6/hzhang/2017-nips/fgsm/inception_v3.ckpt', 'Path to checkpoint for inception network.')
 
 tf.flags.DEFINE_string(
-    'input_dir', '/udd/hzhang/SmoothAdversarialExamples/dataset/images', 'Input directory with images.')
+    'input_dir', '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/test/images/plotimage', 'Input directory with images.')
 
 tf.flags.DEFINE_string(
     'output_dir',
-    '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/test/Timages/biml2', 'Output directory with images.')
+    '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/test/images/gd', 'Output directory with images.')
 
 tf.flags.DEFINE_float(
     'max_epsilon', 16.0, 'Maximum size of adversarial perturbation.')
@@ -144,7 +144,7 @@ def main(_):
   # Images for inception classifier are normalized to be in [-1, 1] interval,
   # eps is a difference between pixels so it should be in [0, 2] interval.
   # Renormalizing epsilon from [0, 255] to [0, 2].
-  eps = 10
+  eps = 64
   batch_shape = [FLAGS.batch_size, FLAGS.image_height, FLAGS.image_width, 3]
   num_classes = 1001
 
@@ -173,6 +173,7 @@ def main(_):
       adv_images=sess.run(x_adv,feed_dict={x_input:images})
       end = time.time()
       print('cost time:',end-begin,'s')
-      #save_images(adv_images,filenames,FLAGS.output_dir)
+      savenames = [str(eps)+'_'+filenames[0]]
+      save_images(adv_images,savenames,FLAGS.output_dir)
 if __name__ == '__main__':
   tf.app.run()
