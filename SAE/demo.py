@@ -14,8 +14,8 @@ import time
 import logging
 import pdb
 import os
-#from attacks_SAE import SmoothBasicIterativeMethod
-from attacks_SAE import SmoothCarliniWagnerL2
+from attacks_SAE import SmoothBasicIterativeMethod
+#from attacks_SAE import SmoothCarliniWagnerL2
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
@@ -92,14 +92,14 @@ def imagnet_attack():
     preds = model(x_input)
     tf_model_load(sess, checkpoint_path)
 
-    attack = SmoothCarliniWagnerL2(model,sess=sess)
+    attack = SmoothBasicIterativeMethod(model, sess=sess)
     adv_params = {'eps': 5/255,
                   'ord': 2,
                   'eps_iter': 3,
                   'clip_min': -1.,
                   'clip_max':1.,
                   'flag':True}
-    adv_x = attack.generate_np(x_input, A, **adv_params)
+    adv_x = attack.generate(x_input, A, **adv_params)
 
     for images, _, labels, filenames in load_images(input_dir, input_dir, metadata_file_path, batch_shape):
         Aa = construct_imagenet_graph((images+1.0)*0.5,lamubda,alpha)
