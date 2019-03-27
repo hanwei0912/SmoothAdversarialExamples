@@ -102,6 +102,7 @@ def mnist_tutorial_bim(train_start=0, train_end=60000, test_start=0,
     assert X_test.shape[0] == test_end - test_start, X_test.shape
     print('Test accuracy on legitimate test examples: {0}'.format(accuracy))
     report.clean_train_clean_eval = accuracy
+    pdb.set_trace()
 
     ###########################################################################
     # Craft adversarial examples using Carlini and Wagner's approach

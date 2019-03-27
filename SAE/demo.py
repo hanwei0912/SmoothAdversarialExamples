@@ -112,7 +112,7 @@ def imagnet_attack():
     return
 
 def main(_):
-    imagnet_attack()
+    mnist_attack()
 
 if __name__ == '__main__':
     tf.app.run()

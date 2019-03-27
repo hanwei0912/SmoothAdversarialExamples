@@ -31,17 +31,17 @@ tf.flags.DEFINE_string(
 
 tf.flags.DEFINE_string(
     'input_image_dir',
-    '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/test/images/sgd',
+    '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/inceptionV3/FGSM/1',
     'Path to image directory.')
 
 tf.flags.DEFINE_string(
     'origin_image_dir',
-    '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/test/images/ori',
+    '/nfs/pyrex/raid6/hzhang/2017-nips/images',
     'Path to image directory.')
 
 tf.flags.DEFINE_string(
     'metadata_file_path',
-    '/nfs/pyrex/raid6/hzhang/2017-nips/test.csv',
+    '/nfs/pyrex/raid6/hzhang/2017-nips/dev_dataset.csv',
     'Path to metadata file.')
 
 FLAGS = tf.flags.FLAGS
@@ -194,7 +194,7 @@ def main(_):
             b_i=b_i+1
             #print('L2: %s', L2_norm)
             #print('Li: %s', Li_norm)
-        si.savemat('/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/test/images/sgd.mat',{'p':success,'l2':l2_norm,'ori_a':ori_acc,'c':change,'name':name,'l2_worst':l2_norm_o})
+        si.savemat('/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/whole_data/fgsm_inc_1_p_l2.mat',{'p':success,'l2':l2_norm,'ori_a':ori_acc,'c':change,'name':name,'l2_worst':l2_norm_o})
 
 
 

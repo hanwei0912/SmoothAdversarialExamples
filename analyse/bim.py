@@ -45,7 +45,7 @@ tf.flags.DEFINE_integer(
     'image_height', 299, 'Height of each input images.')
 
 tf.flags.DEFINE_integer(
-    'batch_size', 1, 'How many images process at one time.')
+    'batch_size', 20, 'How many images process at one time.')
 
 tf.flags.DEFINE_string(
     'metadata_file_path',
@@ -162,7 +162,7 @@ def main(_):
   tf_model_load(sess,FLAGS.checkpoint_path)
   
   bim = BasicIterativeMethod(model)
-  x_adv = bim.generate(x_input, eps=eps,eps_iter=3,ord=2, clip_min=-1.,clip_max=1.)
+  x_adv = bim.generate(x_input, eps=eps,eps_iter=3,ord=np.inf, clip_min=-1.,clip_max=1.)
   # Run computation
 
   for filenames,images,labels in load_images(FLAGS.input_dir,FLAGS.metadata_file_path,batch_shape):
