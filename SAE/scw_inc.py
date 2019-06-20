@@ -48,7 +48,7 @@ def main(_):
     # Run computation
 
     adv_image= np.zeros((1000,299,299,3))
-    l2=np.zeros((1000,1))
+    l2=np.zeros((50,1))
     b_i=0
     name = []
     for images, _, labels, filenames in load_images(FLAGS.input_dir, FLAGS.input_dir, FLAGS.metadata_file_path, batch_shape):
@@ -83,23 +83,23 @@ def main(_):
                                **cw_params)
         elapsed = (time.time() - start)
         print("Time used:", elapsed)
-        adv_image[b_i]=x_adv
-        l2[b_i]=np.mean(np.sum((images- x_adv)**2,axis=(1,2,3))**.5)
-        b_i=b_i+1
+        adv_image[b_i:b_i+20]=x_adv
+        l2[b_i/20]=np.mean(np.sum((images- x_adv)**2,axis=(1,2,3))**.5)
+        b_i=b_i+20
         save_images(x_adv, filenames, FLAGS.output_dir)
-    path_save="/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/"+str(FLAGS.learning_rate)+".mat"
-    si.savemat(path_save,{'adv':adv_image,'l2':l2,'name':name})
+        path_save="/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/batch/real/"+str(FLAGS.learning_rate)+str(b_i/20)+".mat"
+        si.savemat(path_save,{'adv':adv_image,'l2':l2,'name':name})
 
 
 if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser()
-    # parser.add_argument("confidence", help="confidence for cw attack")
-    # parser.add_argument("initial_const", help="initial_const for cw attack")
-    # parser.add_argument("max_iteration", help="max_iteration for cw attack")
-    # parser.add_argument("binary_search_steps", help="binary_search_steps for cw attack")
-    parser.add_argument("learning_rate", help="learning_rate for cw attack")
-    args = parser.parse_args()
+    #import argparse
+    #parser = argparse.ArgumentParser()
+    ## parser.add_argument("confidence", help="confidence for cw attack")
+    ## parser.add_argument("initial_const", help="initial_const for cw attack")
+    ## parser.add_argument("max_iteration", help="max_iteration for cw attack")
+    ## parser.add_argument("binary_search_steps", help="binary_search_steps for cw attack")
+    #parser.add_argument("learning_rate", help="learning_rate for cw attack")
+    #args = parser.parse_args()
     tf.flags.DEFINE_string(
         'master', '', 'The address of the TensorFlow master to use.')
     # tf.flags.DEFINE_float('confidence', args.confidence, 'confidence for cw attack')
@@ -112,12 +112,13 @@ if __name__ == '__main__':
     tf.flags.DEFINE_integer('max_iteration', 100, 'max_iteration for cw attack')
     tf.flags.DEFINE_integer('binary_search_steps', 9,
                          'binary_search_steps for cw attack')
-    tf.flags.DEFINE_float('learning_rate', args.learning_rate, 'learning_rate for cw attack')
+    tf.flags.DEFINE_float('learning_rate', 0.01, 'learning_rate for cw attack')
+    #tf.flags.DEFINE_float('learning_rate', args.learning_rate, 'learning_rate for cw attack')
     tf.flags.DEFINE_string(
         'checkpoint_path', '../models/inception_v3.ckpt', 'Path to checkpoint for inception network.')
     tf.flags.DEFINE_string(
         'input_dir', '/nfs/pyrex/raid6/hzhang/2017-nips/images', 'Input directory with images.')
-    path_save ='/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/'+str(FLAGS.learning_rate)
+    path_save = '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/batch/'+str(FLAGS.learning_rate)
     folder = os.path.exists(path_save)
     if not folder:
         os.makedirs(path_save)
@@ -130,7 +131,7 @@ if __name__ == '__main__':
     tf.flags.DEFINE_integer(
         'image_height', 299, 'Height of each input images.')
     tf.flags.DEFINE_integer(
-        'batch_size', 1, 'How many images process at one time.')
+        'batch_size', 20, 'How many images process at one time.')
     tf.flags.DEFINE_string(
         'metadata_file_path',
         '../dataset/dev_dataset.csv',
