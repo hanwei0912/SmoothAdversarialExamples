@@ -48,7 +48,7 @@ def main(_):
     # Run computation
 
     adv_image= np.zeros((1000,299,299,3))
-    l2=np.zeros((50,1))
+    l2=np.zeros((1000))
     b_i=0
     name = []
     for images, _, labels, filenames in load_images(FLAGS.input_dir, FLAGS.input_dir, FLAGS.metadata_file_path, batch_shape):
@@ -83,10 +83,10 @@ def main(_):
                                **cw_params)
         elapsed = (time.time() - start)
         print("Time used:", elapsed)
-        adv_image[b_i:b_i+20]=x_adv
-        l2[b_i/20]=np.mean(np.sum((images- x_adv)**2,axis=(1,2,3))**.5)
-        b_i=b_i+20
         save_images(x_adv, filenames, FLAGS.output_dir)
+        adv_image[b_i:b_i+20]=x_adv
+        l2[b_i:b_i+20]=np.sum((images- x_adv)**2,axis=(1,2,3))**.5
+        b_i=b_i+20
         path_save="/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/batch/real/"+str(FLAGS.learning_rate)+str(b_i/20)+".mat"
         si.savemat(path_save,{'adv':adv_image,'l2':l2,'name':name})
 
