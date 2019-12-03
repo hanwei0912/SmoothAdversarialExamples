@@ -31,19 +31,22 @@ tf.flags.DEFINE_string(
 
 tf.flags.DEFINE_string(
     'input_image_dir',
-    '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/0.1',
+    #'/udd/hzhang/SmoothAdversarialExamples/SAE/new',
+    '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/cw/b0.01',
     'Path to image directory.')
     #'/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/bilateral/0.5-0.2-our',
     #'/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/inceptionV3/FGSM/1',
 
 tf.flags.DEFINE_string(
     'origin_image_dir',
+    #'/udd/hzhang/SmoothAdversarialExamples/dataset/zibra',
     '/nfs/pyrex/raid6/hzhang/2017-nips/images',
     'Path to image directory.')
     #'/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/bilateral/0.5-0.2',
 
 tf.flags.DEFINE_string(
     'metadata_file_path',
+    #'/nfs/pyrex/raid6/hzhang/2017-nips/test.csv',
     '/nfs/pyrex/raid6/hzhang/2017-nips/dev_dataset.csv',
     'Path to metadata file.')
 
@@ -194,12 +197,12 @@ def main(_):
             Li_norm = np.mean(np.max(np.abs(images-X_test),axis=(1,2,3)))
             l2_norm[b_i]=L2_norm
             l2_norm_o[b_i]=L2_norm_o
-            if b_i==344:
-                pdb.set_trace()
+            #pdb.set_trace()
             b_i=b_i+1
             #print('L2: %s', L2_norm)
             #print('Li: %s', Li_norm)
-        si.savemat('/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/cw_inc_0.01_p_l2.mat',{'p':success,'l2':l2_norm,'ori_a':ori_acc,'c':change,'name':name,'l2_worst':l2_norm_o})
+        si.savemat('/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/cw_inc_0.01_p_l2_b.mat',{'p':success,'l2':l2_norm,'ori_a':ori_acc,'c':change,'name':name,'l2_worst':l2_norm_o})
+        #si.savemat('/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/cw_inc_0.01_p_l2.mat',{'p':success,'l2':l2_norm,'ori_a':ori_acc,'c':change,'name':name,'l2_worst':l2_norm_o})
 
 
 

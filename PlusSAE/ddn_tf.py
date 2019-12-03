@@ -84,7 +84,20 @@ class DDN_tf:
 
         # delta: the distortion (adversarial noise)
         delta_r = tf.Variable(np.zeros(batch_shape, dtype=np.float32), name='delta')
-        delta = CG(self.A, delta_r, batch_shape)
+        nn = tf.reduce_sum(tf.multiply(delta_r,delta_r),axis=[1,2])
+        oo = tf.zeros_like(nn)
+        noeq = tf.equal(nn, oo)
+        noeq_int = tf.to_int32(noeq)
+        noeq_res = tf.equal(tf.reduce_sum(noeq_int), tf.reduce_sum(tf.ones_like(noeq_int)))
+        def f_false(delta_r):
+            delta = CG(self.A, delta_r, batch_shape)
+            return delta
+
+        def f_true(delta_r):
+            delta = tf.reshape(delta_r, batch_shape)
+            return delta
+
+        delta = tf.cond(noeq_res, lambda: f_true(delta_r),lambda: f_false(delta_r))
 
         # norm: the current \epsilon-ball around the inputs, on which the attacks are projected
         norm = tf.Variable(np.full(batch_shape[0], init_norm, dtype=np.float32), name='norm')
@@ -232,6 +245,7 @@ class DDN_tf:
             else:
                 sess.run(self.update_saved)
 
+            pdb.set_trace()
             lr, _ = sess.run([self.lr, self.update_op], feed_dict={self.step: i})
 
             if self.callback:

@@ -8,12 +8,43 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import pdb
 import tensorflow as tf
 from cleverhans.model import Model
 from tensorflow.contrib.slim.nets import inception
 from tensorflow.contrib.slim.nets import resnet_v2
 slim = tf.contrib.slim
+from cleverhans import initializers
+from cleverhans.model import Model
+import functools
+#from cleverhans.picklable_model import MLP, Conv2D, ReLU, Flatten, Linear
+#from cleverhans.picklable_model import Softmax
+
+class ModelBasicCNN(Model):
+  def __init__(self, scope, nb_classes, nb_filters, **kwargs):
+    del kwargs
+    Model.__init__(self, scope, nb_classes, locals())
+    self.nb_filters = nb_filters
+
+    # Do a dummy run of fprop to make sure the variables are created from
+    # the start
+    self.fprop(tf.placeholder(tf.float32, [128, 28, 28, 1]))
+    # Put a reference to the params in self so that the params get pickled
+    self.params = self.get_params()
+
+  def fprop(self, x, **kwargs):
+    del kwargs
+    my_conv = functools.partial(
+        tf.layers.conv2d, activation=tf.nn.relu,
+        kernel_initializer=initializers.HeReLuNormalInitializer)
+    with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+      y = my_conv(x, self.nb_filters, 8, strides=2, padding='same')
+      y = my_conv(y, 2 * self.nb_filters, 6, strides=2, padding='valid')
+      y = my_conv(y, 2 * self.nb_filters, 5, strides=1, padding='valid')
+      logits = tf.layers.dense(
+          tf.layers.flatten(y), self.nb_classes,
+          kernel_initializer=initializers.HeReLuNormalInitializer)
+      return {self.O_LOGITS: logits,
+              self.O_PROBS: tf.nn.softmax(logits=logits)}
 
 
 class MLP(Model):
@@ -182,6 +213,22 @@ def make_simple_cnn(nb_filters=32, nb_classes=10, input_shape=(None,28,28,1)):
     model = MLP(layers, input_shape)
     return model
 
+def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
+                             input_shape=(None, 28, 28, 1)):
+  """The model for the picklable models tutorial.
+  """
+  layers = [Conv2D(nb_filters, (8, 8), (2, 2), "SAME"),
+            ReLU(),
+            Conv2D(nb_filters * 2, (6, 6), (2, 2), "VALID"),
+            ReLU(),
+            Conv2D(nb_filters * 2, (5, 5), (1, 1), "VALID"),
+            ReLU(),
+            Flatten(),
+            Linear(nb_classes),
+            Softmax()]
+  model = MLP(layers, input_shape)
+  return model
+
 def make_imagenet_cnn(input_shape=(None, 224, 224, 3)):
     layers = [Conv2D(96, (3, 3), (2, 2), "VALID"),
               ReLU(),
@@ -245,6 +292,7 @@ class InceptionModel(Model):
         """Constructs model and return probabilities for given input."""
         reuse = True if self.built else None
         with slim.arg_scope(inception.inception_v3_arg_scope()):
+            x_input = x_input *2.0 -1.0
             _, end_points = inception.inception_v3(
                 x_input, num_classes=self.num_classes, is_training=False,
                 reuse=reuse)
@@ -267,21 +315,3 @@ class InceptionModel(Model):
 def _top_1_accuracy(logits, labels):
     return tf.reduce_mean(
         tf.cast(tf.nn.in_top_k(logits, labels, 1), tf.float32))
-
-
-class BasicCNNModel(Model):
-    def __init__(self):
-        self.model = make_basic_cnn()
-
-    def __call__(self, x_input, return_logits=False):
-        pdb.set_trace()
-        self.prods = self.model(x_input)
-        return self.prods
-
-    def get_logits(self,x_input):
-        self.layer = self.model.get_layer_names()
-        self.logits = self.model.get_layer(x_input,self.layer[-2])
-        return
-
-    def get_probs(self,x_input):
-        return

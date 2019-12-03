@@ -14,8 +14,9 @@ import time
 import logging
 import pdb
 import os
-from attacks_SAE import SmoothBasicIterativeMethod
-#from attacks_SAE import SmoothCarliniWagnerL2
+#from attacks_SAE import SmoothBasicIterativeMethodDense
+from attacks_SAE import SmoothBasicIterativeMethodSparse
+#from attacks_SAE import SmoothCarliniWagnerDense
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
@@ -23,6 +24,7 @@ from cleverhans.utils_tf import model_train, model_eval, tf_model_load
 from basic_cnn_models import *
 from load_data import *
 from knn import *
+import matplotlib.pyplot as plt
 
 def mnist_attack():
     # MNIST-specific dimensions
@@ -44,17 +46,16 @@ def mnist_attack():
 
     x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols, channels))
     y = tf.placeholder(tf.float32, shape=(None, nb_classes))
-    A       = tf.placeholder(tf.float32)
+    A       = tf.placeholder(tf.float32, shape = (None, img_rows*img_cols, img_rows*img_cols))
 
     # Define TF model graph
-    pdb.set_trace()
-    model = BasicCNNModel()
-    preds = model(x)
+    model = ModelBasicCNN('model1', 10, 64)
+    preds = model.get_probs(x)
     print("Defined TensorFlow model graph.")
-    tf_model_load(sess,'../models/basic_cnn.ckpt')
+    tf_model_load(sess,'../models/mnist')
 
-    pdb.set_trace()
-    attack = SmoothBasicIterativeMethod(model,back='tf', sess=sess)
+    attack = SmoothCarliniWagnerDense(model, sess=sess)
+    #attack = SmoothBasicIterativeMethodDense(model, sess=sess)
     adv_params = {'eps': 5,
                   'ord':2,
                   'eps_iter': 3,
@@ -63,9 +64,12 @@ def mnist_attack():
                   'clip_max': 1.}
     adv_x = attack.generate(x, A, ** adv_params)
     rng   = np.random.RandomState([2017,8,30])
-    for images, y_label in load_images_m():
-        Aa = construct_mnist_graph(img,lamubda,alpha,eig_num)
-        x_adv = sess.run(adv_x, feed_dict={x:images, y:y_label, A:Aa})
+    x_test, y_test = data_mnist(test_start=0, test_end=10000)
+    for i in range(10000):
+        Aa = construct_mnist_graph(x_test[i:i+1],lamubda,alpha,eig_num)
+        x_adv = sess.run(adv_x, feed_dict={x:x_test[i:i+1], y:y_test[i:i+1], A:Aa})
+        pdb.set_trace()
+        implot = plt.imshow(x_adv)
 
     sess.close()
     return
@@ -92,7 +96,7 @@ def imagnet_attack():
     preds = model(x_input)
     tf_model_load(sess, checkpoint_path)
 
-    attack = SmoothBasicIterativeMethod(model, sess=sess)
+    attack = SmoothBasicIterativeMethodSparse(model, sess=sess)
     adv_params = {'eps': 5/255,
                   'ord': 2,
                   'eps_iter': 3,
@@ -106,13 +110,14 @@ def imagnet_attack():
         begin=time.time()
         x_adv = sess.run(adv_x,feed_dict={x_input:images, A:Aa})
         end=time.time()
+        pdb.set_trace()
         print('cost total:', end-begin,'s')
 
     sess.close()
     return
 
 def main(_):
-    mnist_attack()
+    imagnet_attack()
 
 if __name__ == '__main__':
     tf.app.run()

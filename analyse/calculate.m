@@ -8,7 +8,7 @@ cw_m(:,2)=1-cw.p(cw.ori_a==1);
 % cw_m(cw.ori_a==0,2) = 0;
 cw.p(cw.ori_a==0) = 1;
 
-ind = find(cw_m(:,1)<30);
+ind = find(cw_m(:,1)<100);
 cw_m = cw_m(ind,:);
 
 p_suc = sum(cw_m(:,2))/d_total_num;

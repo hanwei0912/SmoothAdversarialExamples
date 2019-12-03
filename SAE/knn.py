@@ -134,12 +134,13 @@ def construct_imagenet_graph(img,lamuda,alpha):
         img_i = np.array(img[:,:,dim_i],dtype=np.float32)
         S, ind = construct_sparse(img_i, lamuda)
         Aa = - alpha * S
+        Aa = csr_matrix.todense(Aa)
         A = graph_matrix(Aa,ind)
         A = np.reshape(A,(4,shape[0],shape[1]))
         Ha[0,:,:,:,dim_i] = A
     return Ha
 
-def construct_mnist_graph(img,lamuda,alpha,eig_num):
+def construct_mnist_graph(imgs,lamuda,alpha,eig_num):
     """
     pi,pit = construct_mnist_graph(img,lamuda,alpha,eig_num)
     construct sparse matrix for mnist images (gray images)
@@ -150,13 +151,16 @@ def construct_mnist_graph(img,lamuda,alpha,eig_num):
     pi: N*eig_num matrix
     pit: eig_num*N matrix
     """
-    shape=img.shape
-    img = np.reshape(img,(shape[0],shape[1]))
-    S, ind = construct_sparse(img, lamuda)
-    # calculate the 
-    A = ss.eye(shape[0]*shape[1]) - alpha * S
-    z = np.sum(A,axis=0)
-    A = A / z
+    shape=imgs.shape
+    Aa = np.zeros((shape[0],shape[1]*shape[2],shape[1]*shape[2]))
+    for i in range(shape[0]):
+        img = np.reshape(imgs[i],(shape[1],shape[2]))
+        S, ind = construct_sparse(img, lamuda)
+        # calculate the 
+        A = ss.eye(shape[1]*shape[2]) - alpha * S
+        A = csr_matrix.todense(A)
+        z = np.sum(A,axis=0)
+        Aa[i] = A / z
     # calculate eigen values
     #w, v = LA.eig(S.todense())
     #U= v[:,0:eig_num]
@@ -172,5 +176,5 @@ def construct_mnist_graph(img,lamuda,alpha,eig_num):
     #z = np.sum(A,axis=0)
     #pit = np.transpose(pi)/z
     #pit = np.array(pit,dtype=np.float32)
-    return A
+    return Aa
 

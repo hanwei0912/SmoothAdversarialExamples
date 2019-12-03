@@ -57,15 +57,15 @@ def main(_):
             y_labels[i_y][labels[i_y]]=1
         # load matrix A
         def load_A(filenames, batch_shape, img_size, namuda):
-            data_dir = "/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/A/SpA_"
+            data_dir = "/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/A1/SpA_"
             n_f = len(filenames)
             A = np.zeros((batch_shape, 4, 299, 299, 3))
             for i in range(n_f):
-                name_p = data_dir+filenames[i]+"_"+namuda+"_0.997000.mat"
+                name_p = data_dir+filenames[i]+"_"+namuda+"_0.900000.mat"
                 data = si.loadmat(name_p)
                 A[i] = data['A']
             return A
-        A = load_A(filenames, FLAGS.batch_size, FLAGS.image_height*FLAGS.image_width, '300.000000')
+        A = load_A(filenames, FLAGS.batch_size, FLAGS.image_height*FLAGS.image_width, '100.000000')
         A = np.array(A, dtype=np.float32)
 
         name.append(filenames[0])
@@ -87,8 +87,9 @@ def main(_):
         l2[b_i]=np.mean(np.sum((images- x_adv)**2,axis=(1,2,3))**.5)
         b_i=b_i+1
         save_images(x_adv, filenames, FLAGS.output_dir)
-    path_save="/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/"+str(FLAGS.learning_rate)+".mat"
-    si.savemat(path_save,{'adv':adv_image,'l2':l2,'name':name})
+        #pdb.set_trace()
+    #path_save="/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/"+str(FLAGS.learning_rate)+".mat"
+    #si.savemat(path_save,{'adv':adv_image,'l2':l2,'name':name})
 
 
 if __name__ == '__main__':
@@ -116,8 +117,9 @@ if __name__ == '__main__':
     tf.flags.DEFINE_string(
         'checkpoint_path', '../models/inception_v3.ckpt', 'Path to checkpoint for inception network.')
     tf.flags.DEFINE_string(
-        'input_dir', '/nfs/pyrex/raid6/hzhang/2017-nips/images', 'Input directory with images.')
-    path_save ='/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/'+str(FLAGS.learning_rate)
+        'input_dir', '/udd/hzhang/SmoothAdversarialExamples/dataset/zibra', 'Input directory with images.')
+    path_save ='./new'
+    #path_save ='/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/'+str(FLAGS.learning_rate)
     folder = os.path.exists(path_save)
     if not folder:
         os.makedirs(path_save)
@@ -133,6 +135,7 @@ if __name__ == '__main__':
         'batch_size', 1, 'How many images process at one time.')
     tf.flags.DEFINE_string(
         'metadata_file_path',
-        '../dataset/dev_dataset.csv',
+        '/nfs/pyrex/raid6/hzhang/2017-nips/test.csv',
+        #'../dataset/dev_dataset.csv',
         'Path to metadata file.')
     tf.app.run()

@@ -87,7 +87,7 @@ def main(_):
         adv_image[b_i:b_i+20]=x_adv
         l2[b_i:b_i+20]=np.sum((images- x_adv)**2,axis=(1,2,3))**.5
         b_i=b_i+20
-        path_save="/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/batch/real/"+str(FLAGS.learning_rate)+str(b_i/20)+".mat"
+        path_save="/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/adv/real/"+str(FLAGS.learning_rate)+str(b_i/20)+".mat"
         si.savemat(path_save,{'adv':adv_image,'l2':l2,'name':name})
 
 
@@ -115,10 +115,10 @@ if __name__ == '__main__':
     tf.flags.DEFINE_float('learning_rate', 0.01, 'learning_rate for cw attack')
     #tf.flags.DEFINE_float('learning_rate', args.learning_rate, 'learning_rate for cw attack')
     tf.flags.DEFINE_string(
-        'checkpoint_path', '../models/inception_v3.ckpt', 'Path to checkpoint for inception network.')
+        'checkpoint_path', '/nfs/pyrex/raid6/hzhang/2017-nips/models/ens_adv_inception/adv/adv_inception_v3.ckpt', 'Path to checkpoint for inception network.')
     tf.flags.DEFINE_string(
         'input_dir', '/nfs/pyrex/raid6/hzhang/2017-nips/images', 'Input directory with images.')
-    path_save = '/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/batch/'+str(FLAGS.learning_rate)
+    path_save ='/nfs/nas4/data-hanwei/data-hanwei/DATA/SmoothPerturbation/imagenet/new/inception/scw/adv/'+str(FLAGS.learning_rate)
     folder = os.path.exists(path_save)
     if not folder:
         os.makedirs(path_save)
