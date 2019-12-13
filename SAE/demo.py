@@ -14,14 +14,16 @@ import time
 import logging
 import pdb
 import os
-#from attacks_SAE import SmoothBasicIterativeMethodDense
+from attacks_SAE import SmoothBasicIterativeMethodDense
 from attacks_SAE import SmoothBasicIterativeMethodSparse
-#from attacks_SAE import SmoothCarliniWagnerDense
+from attacks_SAE import SmoothCarliniWagnerSparse
+from attacks_SAE import SmoothCarliniWagnerDense
 from cleverhans.utils import pair_visual, grid_visual, AccuracyReport
 from cleverhans.utils import set_log_level
 from cleverhans.utils_mnist import data_mnist
 from cleverhans.utils_tf import model_train, model_eval, tf_model_load
 from basic_cnn_models import *
+from basic_cnn_models import _top_1_accuracy
 from load_data import *
 from knn import *
 import matplotlib.pyplot as plt
@@ -81,7 +83,7 @@ def imagnet_attack():
     lamubda = 10
     alpha = 0.95
     checkpoint_path = '../models/inception_v3.ckpt'
-    input_dir = '../dataset/images'
+    input_dir = '../dataset/zibra'
     metadata_file_path = '../dataset/dev_dataset.csv'
 
     # Create TF session
@@ -91,17 +93,31 @@ def imagnet_attack():
 
     # Prepare graph
     x_input = tf.placeholder(tf.float32, shape = batch_shape)
+    y_label = tf.placeholder(tf.int32, shape=(batch_shape[0],))
     A       = tf.placeholder(tf.float32)
     model = InceptionModel(num_classes)
     preds = model(x_input)
+    logits = model.get_logits(x_input)
+    acc = _top_1_accuracy(logits, y_label)
     tf_model_load(sess, checkpoint_path)
 
-    attack = SmoothBasicIterativeMethodSparse(model, sess=sess)
-    adv_params = {'eps': 5/255,
-                  'ord': 2,
-                  'eps_iter': 3,
+    #attack = SmoothBasicIterativeMethodSparse(model, sess=sess)
+    #adv_params = {'eps': 5/255,
+    #              'ord': 2,
+    #              'eps_iter': 3,
+    #              'clip_min': -1.,
+    #              'clip_max':1.,
+    #              'alpha': alpha,
+    #              'flag':True}
+    attack = SmoothCarliniWagnerSparse(model, sess=sess)
+    adv_params = {'binary_search_steps':9,
+                  'max_iterations':100,
+                  'learning_rate':1e-2,
+                  'initial_const': 10,
+                  'batch_size':batch_shape[0],
                   'clip_min': -1.,
                   'clip_max':1.,
+                  'alpha': alpha,
                   'flag':True}
     adv_x = attack.generate(x_input, A, **adv_params)
 
@@ -110,8 +126,10 @@ def imagnet_attack():
         begin=time.time()
         x_adv = sess.run(adv_x,feed_dict={x_input:images, A:Aa})
         end=time.time()
-        pdb.set_trace()
         print('cost total:', end-begin,'s')
+        dist = np.sum((x_adv-images)**2,axis=(1,2,3))**.5
+        suc = sess.run(acc, feed_dict={x_input:x_adv,y_label:labels})
+        print('distortion:',dist[0],'Is adversarial(0:Yes,1:NO)',suc)
 
     sess.close()
     return

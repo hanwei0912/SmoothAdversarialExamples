@@ -133,7 +133,7 @@ def construct_imagenet_graph(img,lamuda,alpha):
     for dim_i in range(shape[2]):
         img_i = np.array(img[:,:,dim_i],dtype=np.float32)
         S, ind = construct_sparse(img_i, lamuda)
-        Aa = - alpha * S
+        Aa = ss.eye(shape[0]*shape[1]) - alpha * S
         Aa = csr_matrix.todense(Aa)
         A = graph_matrix(Aa,ind)
         A = np.reshape(A,(4,shape[0],shape[1]))

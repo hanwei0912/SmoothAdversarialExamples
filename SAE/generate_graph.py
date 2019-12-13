@@ -16,10 +16,10 @@ from knn import construct_mnist_graph
 from load_data import *
 
 def imagenet():
-    path_name = "../../dataset/images" # path of your data
+    path_name = "../../dataset/zibra" # path of your data
     lamubda = 300
     alpha   = 0.997
-    imgnames = load_imagenet_list(path_name)
+    imgnames = load_imagenet(path_name)
     for imgname in imgnames:
         pdb.set_trace()
         imgpath =os.path.join(path_name,imgname)

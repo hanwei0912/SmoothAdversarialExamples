@@ -121,8 +121,8 @@ class SmoothCarliniWagnerSparse(Attack):
     """
     This attack was originally proposed from the work SmoothAdversarialPerturbation. It introduced
     the smoothness into the attacks of Carlini and Wagner. As Carlini and Wagner's attack is much
-    slower than other, this attack is also slow. This version uses Conjugate Gradient to calculate the 
-    smoothness, which is suitable to the big images like ImageNet. 
+    slower than other, this attack is also slow. This version uses Conjugate Gradient to calculate the
+    smoothness, which is suitable to the big images like ImageNet.
     """
     def __init__(self, model,  sess=None):
         """
@@ -133,19 +133,19 @@ class SmoothCarliniWagnerSparse(Attack):
 
         import tensorflow as tf
         self.feedable_kwargs = {'y': tf.float32,
-                                'y_target': tf.float32,
-                                'A':tf.float32}
+                                'y_target': tf.float32
+                                }
 
         self.structural_kwargs = ['batch_size', 'confidence',
                                   'targeted', 'learning_rate',
                                   'binary_search_steps', 'max_iterations',
                                   'abort_early', 'initial_const','flag',
-                                  'clip_min', 'clip_max']
+                                  'clip_min', 'clip_max','alpha']
 
         if not isinstance(self.model, Model):
             self.model = CallableModelWrapper(self.model, 'logits')
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, A, **kwargs):
         """
         Return a tensor that constructs adversarial examples for the given
         input. Generate uses tf.py_func in order to operate over tensors.
@@ -184,10 +184,9 @@ class SmoothCarliniWagnerSparse(Attack):
         :param clip_max: (optional float) Maximum input component value
         """
         import tensorflow as tf
-        from .attacks_tf_SAE import SmoothCarliniWagnerSparse as CLV2
+        from attacks_tf_SAE import SmoothCarliniWagnerL2Sparse as CLV2
         self.parse_params(**kwargs)
 
-        A = kwargs['A']
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
         attack = CLV2(self.sess, self.model, self.batch_size,
@@ -195,7 +194,7 @@ class SmoothCarliniWagnerSparse(Attack):
                       self.learning_rate, self.binary_search_steps,
                       self.max_iterations, self.abort_early,
                       self.initial_const, self.clip_min, self.clip_max,self.flag,
-                      nb_classes, x.get_shape().as_list()[1:])
+                      nb_classes, x.get_shape().as_list()[1:],self.alpha)
 
         def cv_wrap(x_val, y_val,A_val):
             return np.array(attack.attack(x_val, y_val,A_val), dtype=np.float32)
@@ -204,11 +203,11 @@ class SmoothCarliniWagnerSparse(Attack):
         return wrap
 
     def parse_params(self, y=None, y_target=None, nb_classes=None,
-                     batch_size=1, confidence=0, 
+                     batch_size=1, confidence=0,
                      learning_rate=5e-3,
                      binary_search_steps=5, max_iterations=1000,
                      abort_early=True, initial_const=1e-2,
-                     clip_min=0, clip_max=1,flag=False,A=None):
+                     clip_min=0, clip_max=1,flag=False, alpha=0.9):
 
         # ignore the y and y_target argument
         if nb_classes is not None:
@@ -224,6 +223,7 @@ class SmoothCarliniWagnerSparse(Attack):
         self.clip_min = clip_min
         self.clip_max = clip_max
         self.flag = flag
+        self.alpha = alpha
 
 class SmoothBasicIterativeMethodSparse(Attack):
 
@@ -244,6 +244,7 @@ class SmoothBasicIterativeMethodSparse(Attack):
                                 'eps_iter': np.float32,
                                 'flag':np.bool,
                                 'y': np.float32,
+                                'alpha':np.float32,
                                 'y_target': np.float32,
                                 'clip_min': np.float32,
                                 'clip_max': np.float32}
@@ -318,6 +319,7 @@ class SmoothBasicIterativeMethodSparse(Attack):
 
             def f_false(modifier, div_z):
                 smo_mod = CG(Aa, modifier, shape)
+                smo_mod = (1-self.alpha)*smo_mod
                 smo_mod = Norm_CG(smo_mod,div_z)
                 return smo_mod, div_z
 
@@ -357,7 +359,7 @@ class SmoothBasicIterativeMethodSparse(Attack):
 
     def parse_params(self, eps=0.3, eps_iter=0.05, nb_iter=10, y=None,
                      ord=np.inf, clip_min=None, clip_max=None,flag=False,
-                     y_target=None, **kwargs):
+                     y_target=None,alpha = 0.9, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks
         before saving them as attributes.
@@ -386,6 +388,7 @@ class SmoothBasicIterativeMethodSparse(Attack):
         self.flag = flag
         self.clip_min = clip_min
         self.clip_max = clip_max
+        self.alpha = alpha
 
         if self.y is not None and self.y_target is not None:
             raise ValueError("Must not set both y and y_target")

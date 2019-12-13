@@ -10,10 +10,11 @@ import tensorflow as tf
 import warnings
 import pdb
 import gc
-from . import utils_tf
-from . import utils
+from cleverhans import utils
+import logging
 
-_logger = utils.create_logger("cleverhans.attacks.tf.SAE")
+_logger = utils.create_logger("cleverhans.attacks_tf_SAE")
+_logger.setLevel(logging.INFO)
 
 class SmoothCarliniWagnerDense(object):
 
@@ -62,7 +63,7 @@ class SmoothCarliniWagnerDense(object):
         :param shape: the shape of the model's input tensor.
         :param A: the tensor of matrix of the smooth
         """
-        from .utils_SAE import CG
+        from utils_SAE import CG
 
         self.sess = sess
         self.TARGETED = targeted
@@ -326,7 +327,7 @@ class SmoothCarliniWagnerL2Sparse(object):
                  targeted, learning_rate,
                  binary_search_steps, max_iterations,
                  abort_early, initial_const,
-                 clip_min, clip_max, flag, num_labels, shape):
+                 clip_min, clip_max, flag, num_labels, shape, alpha):
         """
         Return a tensor that constructs adversarial examples for the given
         input. Generate uses tf.py_func in order to operate over tensors.
@@ -366,8 +367,9 @@ class SmoothCarliniWagnerL2Sparse(object):
         :param num_labels: the number of classes in the model's output.
         :param shape: the shape of the model's input tensor.
         :param A: the tensor of matrix of the smooth
+        :param alpha: the parameter for smooth matrix
         """
-        from .utils_SAE import CG
+        from utils_SAE import CG
 
         self.sess = sess
         self.TARGETED = targeted
@@ -382,6 +384,7 @@ class SmoothCarliniWagnerL2Sparse(object):
         self.clip_max = clip_max
         self.model = model
         self.flag = flag
+        self.alpha = alpha
 
         self.repeat = binary_search_steps >= 10
         self.terminate_situation = 0
@@ -408,39 +411,29 @@ class SmoothCarliniWagnerL2Sparse(object):
         self.assign_const = tf.placeholder(tf.float32, [batch_size],
                                            name='assign_const')
 
-        def f_sparse():
-            self.A = tf.Variable(
-                np.zeros((batch_size, 4,shape[1],shape[2],shape[3]), dtype=np.float32))
+        self.A = tf.Variable(
+            np.zeros((batch_size, 4,shape[1],shape[2],shape[3]), dtype=np.float32))
 
-            self.assign_A = tf.placeholder(tf.float32, (batch_size, 4,shape[1],shape[2], shape[3]),
-                                           name='assign_A')
+        self.assign_A = tf.placeholder(tf.float32, (batch_size, 4,shape[1],shape[2], shape[3]),
+                                       name='assign_A')
 
-            # zeros situation
-            nn = tf.reduce_sum(tf.multiply(modifier,modifier),axis=[1,2])
-            oo = tf.zeros_like(nn)
-            noeq = tf.equal(nn, oo)
-            noeq_int = tf.to_int32(noeq)
-            noeq_res = tf.equal(tf.reduce_sum(noeq_int), tf.reduce_sum(tf.ones_like(noeq_int)))
+        # zeros situation
+        nn = tf.reduce_sum(tf.multiply(modifier,modifier),axis=[1,2])
+        oo = tf.zeros_like(nn)
+        noeq = tf.equal(nn, oo)
+        noeq_int = tf.to_int32(noeq)
+        noeq_res = tf.equal(tf.reduce_sum(noeq_int), tf.reduce_sum(tf.ones_like(noeq_int)))
 
-            def f_false(modifier):
-                smo_mod = CG(self.A, modifier, batch_size, shape)
-                return smo_mod
-
-            def f_true(mm):
-                smo_mod = tf.reshape(mm,shape)
-                return smo_mod
-
-            smo_mod = tf.cond(noeq_res, lambda: f_true(modifier),lambda: f_false(modifier))
+        def f_false(modifier):
+            smo_mod = CG(self.A, modifier, shape)
             return smo_mod
-        def f_dense():
-            self.A = tf.Variable(np.zeros((batch_size, shape[1]*shape[2],shape[1]*shape[2]),
-                dtype=np.float32))
-            self.assign_At = tf.placeholder(tf.float32, (batch_size, self.eig_num, self.eig_num),
-                                                            name='assign_At')
-            temp = tf.reshape(modifier,(batch_size,shape[1]*shape[2]))
-            smo_mod = tf.matmul(modifier,self.A)
+
+        def f_true(mm):
+            smo_mod = tf.reshape(mm,shape)
             return smo_mod
-        smo_mod = tf.cond(self.flag,lambda:f_sparse(),lambda:f_dense())
+
+        smo_mod = tf.cond(noeq_res, lambda: f_true(modifier),lambda: f_false(modifier))
+        smo_mod = (1-self.alpha)*smo_mod
 
         # the resulting instance, tanh'd to keep bounded from clip_min
         # to clip_max
