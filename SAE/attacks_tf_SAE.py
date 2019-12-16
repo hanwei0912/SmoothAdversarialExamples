@@ -22,7 +22,7 @@ class SmoothCarliniWagnerDense(object):
                  targeted, learning_rate,
                  binary_search_steps, max_iterations,
                  abort_early, initial_const,
-                 clip_min, clip_max, flag, num_labels, shape):
+                 clip_min, clip_max, num_labels, shape):
         """
         Return a tensor that constructs adversarial examples for the given
         input. Generate uses tf.py_func in order to operate over tensors.
@@ -77,7 +77,6 @@ class SmoothCarliniWagnerDense(object):
         self.clip_min = clip_min
         self.clip_max = clip_max
         self.model = model
-        self.flag = flag
 
         self.repeat = binary_search_steps >= 10
         self.terminate_situation = 0
@@ -87,7 +86,7 @@ class SmoothCarliniWagnerDense(object):
 
         # the variable we're going to optimize over
         modifier = tf.Variable(
-            np.zeros((batch_size, shape[1], shape[2], shape[3]), dtype=np.float32))
+            np.zeros((batch_size, shape[3], shape[1]*shape[2]), dtype=np.float32))
 
         self.timg = tf.Variable(np.zeros(shape), dtype=tf.float32,
                                 name='timg')
@@ -106,10 +105,10 @@ class SmoothCarliniWagnerDense(object):
 
         self.A = tf.Variable(np.zeros((batch_size, shape[1]*shape[2],shape[1]*shape[2]),
             dtype=np.float32))
-        self.assign_At = tf.placeholder(tf.float32, (batch_size, self.eig_num, self.eig_num),
-                                                        name='assign_At')
-        temp = tf.reshape(modifier,(batch_size,shape[1]*shape[2]))
-        smo_mod = tf.matmul(modifier,self.A)
+        self.assign_A = tf.placeholder(tf.float32, (batch_size, shape[1]*shape[2],shape[1]*shape[2]),
+                                                        name='assign_A')
+        smo_mod = tf.matmul(modifier, self.A)
+        smo_mod = tf.reshape(smo_mod, shape)
 
         # the resulting instance, tanh'd to keep bounded from clip_min
         # to clip_max
@@ -327,7 +326,7 @@ class SmoothCarliniWagnerL2Sparse(object):
                  targeted, learning_rate,
                  binary_search_steps, max_iterations,
                  abort_early, initial_const,
-                 clip_min, clip_max, flag, num_labels, shape, alpha):
+                 clip_min, clip_max, num_labels, shape):
         """
         Return a tensor that constructs adversarial examples for the given
         input. Generate uses tf.py_func in order to operate over tensors.

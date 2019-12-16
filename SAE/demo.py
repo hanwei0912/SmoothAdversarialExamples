@@ -56,11 +56,18 @@ def mnist_attack():
     print("Defined TensorFlow model graph.")
     tf_model_load(sess,'../models/mnist')
 
-    attack = SmoothCarliniWagnerDense(model, sess=sess)
-    #attack = SmoothBasicIterativeMethodDense(model, sess=sess)
-    adv_params = {'eps': 5,
+    #attack = SmoothCarliniWagnerDense(model, sess=sess)
+    #adv_params = {'binary_search_steps':9,
+    #              'max_iterations':100,
+    #              'learning_rate':1e-2,
+    #              'initial_const': 10,
+    #              'batch_size':1,
+    #              'clip_min': -1.,
+    #              'clip_max':1.}
+    attack = SmoothBasicIterativeMethodDense(model, sess=sess)
+    adv_params = {'eps': 9,
                   'ord':2,
-                  'eps_iter': 3,
+                  'eps_iter': 0.8,
                   'flag':False,
                   'clip_min': 0.,
                   'clip_max': 1.}
@@ -68,10 +75,16 @@ def mnist_attack():
     rng   = np.random.RandomState([2017,8,30])
     x_test, y_test = data_mnist(test_start=0, test_end=10000)
     for i in range(10000):
-        Aa = construct_mnist_graph(x_test[i:i+1],lamubda,alpha,eig_num)
+        Aa = construct_mnist_graph(x_test[i:i+1],lamubda,alpha)
         x_adv = sess.run(adv_x, feed_dict={x:x_test[i:i+1], y:y_test[i:i+1], A:Aa})
+        pre_l = sess.run(preds,feed_dict={x:x_adv, y:y_test[i:i+1]})
+        label = np.argmax(y_test[i:i+1])
+        pre_l = np.argmax(pre_l)
+        l2 = np.sum((x_adv-x_test[i:i+1])**2,axis=(1,2,3))**.5
+        is_adv = np.equal(label,pre_l)
+        print('distortion:',l2,'is adversarial:',~is_adv)
         pdb.set_trace()
-        implot = plt.imshow(x_adv)
+        #implot = plt.imshow(x_adv)
 
     sess.close()
     return
@@ -135,7 +148,7 @@ def imagnet_attack():
     return
 
 def main(_):
-    imagnet_attack()
+    mnist_attack()
 
 if __name__ == '__main__':
     tf.app.run()

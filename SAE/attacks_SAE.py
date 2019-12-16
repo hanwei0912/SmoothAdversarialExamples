@@ -25,19 +25,18 @@ class SmoothCarliniWagnerDense(Attack):
 
         import tensorflow as tf
         self.feedable_kwargs = {'y': tf.float32,
-                                'y_target': tf.float32,
-                                'A':tf.float32}
+                                'y_target': tf.float32}
 
         self.structural_kwargs = ['batch_size', 'confidence',
                                   'targeted', 'learning_rate',
                                   'binary_search_steps', 'max_iterations',
-                                  'abort_early', 'initial_const','flag',
+                                  'abort_early', 'initial_const',
                                   'clip_min', 'clip_max']
 
         if not isinstance(self.model, Model):
             self.model = CallableModelWrapper(self.model, 'logits')
 
-    def generate(self, x, **kwargs):
+    def generate(self, x, A, **kwargs):
         """
         Return a tensor that constructs adversarial examples for the given
         input. Generate uses tf.py_func in order to operate over tensors.
@@ -76,17 +75,16 @@ class SmoothCarliniWagnerDense(Attack):
         :param clip_max: (optional float) Maximum input component value
         """
         import tensorflow as tf
-        from .attacks_tf_SAE import SmoothCarliniWagnerDense as CLV2
+        from attacks_tf_SAE import SmoothCarliniWagnerDense as CLV2
         self.parse_params(**kwargs)
 
-        A = kwargs['A']
         labels, nb_classes = self.get_or_guess_labels(x, kwargs)
 
         attack = CLV2(self.sess, self.model, self.batch_size,
                       self.confidence, 'y_target' in kwargs,
                       self.learning_rate, self.binary_search_steps,
                       self.max_iterations, self.abort_early,
-                      self.initial_const, self.clip_min, self.clip_max,self.flag,
+                      self.initial_const, self.clip_min, self.clip_max,
                       nb_classes, x.get_shape().as_list()[1:])
 
         def cv_wrap(x_val, y_val,A_val):
@@ -100,7 +98,7 @@ class SmoothCarliniWagnerDense(Attack):
                      learning_rate=5e-3,
                      binary_search_steps=5, max_iterations=1000,
                      abort_early=True, initial_const=1e-2,
-                     clip_min=0, clip_max=1,flag=False,A=None):
+                     clip_min=0, clip_max=1):
 
         # ignore the y and y_target argument
         if nb_classes is not None:
@@ -115,7 +113,6 @@ class SmoothCarliniWagnerDense(Attack):
         self.initial_const = initial_const
         self.clip_min = clip_min
         self.clip_max = clip_max
-        self.flag = flag
 
 class SmoothCarliniWagnerSparse(Attack):
     """

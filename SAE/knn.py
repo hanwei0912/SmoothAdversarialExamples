@@ -9,6 +9,7 @@ import numpy as np
 from numpy import linalg as LA
 from scipy.sparse import csr_matrix
 import scipy.sparse as ss
+from numpy.linalg import inv
 
 def similarity(x_img,lamuda):
     """
@@ -140,16 +141,13 @@ def construct_imagenet_graph(img,lamuda,alpha):
         Ha[0,:,:,:,dim_i] = A
     return Ha
 
-def construct_mnist_graph(imgs,lamuda,alpha,eig_num):
+def construct_mnist_graph(imgs,lamuda,alpha):
     """
     pi,pit = construct_mnist_graph(img,lamuda,alpha,eig_num)
     construct sparse matrix for mnist images (gray images)
     img: M*M image
     lamuda: parameter for similarity
     alpha: parameter to control the smoothness
-    eig_num: number of eig vactors and eig values
-    pi: N*eig_num matrix
-    pit: eig_num*N matrix
     """
     shape=imgs.shape
     Aa = np.zeros((shape[0],shape[1]*shape[2],shape[1]*shape[2]))
@@ -159,22 +157,9 @@ def construct_mnist_graph(imgs,lamuda,alpha,eig_num):
         # calculate the 
         A = ss.eye(shape[1]*shape[2]) - alpha * S
         A = csr_matrix.todense(A)
+        A = inv(A)
+        A = (1-alpha)*A
         z = np.sum(A,axis=0)
         Aa[i] = A / z
-    # calculate eigen values
-    #w, v = LA.eig(S.todense())
-    #U= v[:,0:eig_num]
-    #V =w[0:eig_num]
-    ## calculate the smooth matrix
-    #h = np.power(1-alpha*V,-1)
-    #hh = np.sqrt(h)
-    #H = np.diag(hh)
-    #pi = np.matmul(U,H)
-    #pi = np.array(pi,dtype=np.float32)
-    ## normalize
-    #A = np.matmul(pi,np.transpose(pi))
-    #z = np.sum(A,axis=0)
-    #pit = np.transpose(pi)/z
-    #pit = np.array(pit,dtype=np.float32)
     return Aa
 
