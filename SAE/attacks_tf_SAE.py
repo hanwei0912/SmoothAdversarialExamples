@@ -326,7 +326,7 @@ class SmoothCarliniWagnerL2Sparse(object):
                  targeted, learning_rate,
                  binary_search_steps, max_iterations,
                  abort_early, initial_const,
-                 clip_min, clip_max, num_labels, shape):
+                 clip_min, clip_max, num_labels, shape, alpha):
         """
         Return a tensor that constructs adversarial examples for the given
         input. Generate uses tf.py_func in order to operate over tensors.
@@ -382,7 +382,6 @@ class SmoothCarliniWagnerL2Sparse(object):
         self.clip_min = clip_min
         self.clip_max = clip_max
         self.model = model
-        self.flag = flag
         self.alpha = alpha
 
         self.repeat = binary_search_steps >= 10
@@ -425,6 +424,9 @@ class SmoothCarliniWagnerL2Sparse(object):
 
         def f_false(modifier):
             smo_mod = CG(self.A, modifier, shape)
+            smo_mod = (1-self.alpha)*smo_mod
+            div_z = CG(self.A, tf.ones_like(modifier), shape)
+            smo_mod = tf.div(smo_mod, div_z)
             return smo_mod
 
         def f_true(mm):
@@ -432,7 +434,6 @@ class SmoothCarliniWagnerL2Sparse(object):
             return smo_mod
 
         smo_mod = tf.cond(noeq_res, lambda: f_true(modifier),lambda: f_false(modifier))
-        smo_mod = (1-self.alpha)*smo_mod
 
         # the resulting instance, tanh'd to keep bounded from clip_min
         # to clip_max

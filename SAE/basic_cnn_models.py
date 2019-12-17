@@ -1,6 +1,5 @@
 """
-A pure TensorFlow implementation of a neural network. This can be
-used as a drop-in replacement for a Keras model.
+" Implementation of the neural network based on the cleverhans' model
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -16,8 +15,6 @@ slim = tf.contrib.slim
 from cleverhans import initializers
 from cleverhans.model import Model
 import functools
-#from cleverhans.picklable_model import MLP, Conv2D, ReLU, Flatten, Linear
-#from cleverhans.picklable_model import Softmax
 
 class ModelBasicCNN(Model):
   def __init__(self, scope, nb_classes, nb_filters, **kwargs):
@@ -215,7 +212,8 @@ def make_simple_cnn(nb_filters=32, nb_classes=10, input_shape=(None,28,28,1)):
 
 def make_basic_picklable_cnn(nb_filters=64, nb_classes=10,
                              input_shape=(None, 28, 28, 1)):
-  """The model for the picklable models tutorial.
+  """
+  " The model for the picklable models tutorial.
   """
   layers = [Conv2D(nb_filters, (8, 8), (2, 2), "SAME"),
             ReLU(),

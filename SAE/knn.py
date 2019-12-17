@@ -94,7 +94,7 @@ def graph_matrix(Aa,index):
     fea = graph_matrix(Aa, index)
     transfer N*N sparse matrix to k*N matrix
     Aa: N*N smoothness matrix
-    image_index: M*M image index, use to transfer the Aa to k*N matrix 
+    image_index: M*M image index, use to transfer the Aa to k*N matrix
     fea: k*N matrix
     """
     shape = Aa.shape
@@ -112,14 +112,14 @@ def construct_sparse(img,lamuda):
     img: M*M image, one change of images for RGB images
     lamuda: parameter for similarity
     S: N*N transation matrix matrix
-    image_index: M*ddM image index, use to transfer the Aa to k*N matrix 
+    image_index: M*ddM image index, use to transfer the Aa to k*N matrix
     """
     image_feature,image_index = similarity(img,lamuda)
     A_ = knngraph(image_index,image_feature)
     S  = transition_matrix(A_)
     return S, image_index
 
-def construct_imagenet_graph(img,lamuda,alpha):
+def construct_imagenet_graph(imgs,lamuda,alpha):
     """
     A = construct_imagenet_graph(img,lamuda,alpha)
     construct sparse matrix for imagenet images (RGB images)
@@ -128,17 +128,18 @@ def construct_imagenet_graph(img,lamuda,alpha):
     alpha: parameter to control the smoothness
     A: k*M*M*3 smoothness matrix
     """
-    img = img[0]
-    shape=img.shape
-    Ha = np.ones((1,4,shape[0],shape[1],shape[2]))
-    for dim_i in range(shape[2]):
-        img_i = np.array(img[:,:,dim_i],dtype=np.float32)
-        S, ind = construct_sparse(img_i, lamuda)
-        Aa = ss.eye(shape[0]*shape[1]) - alpha * S
-        Aa = csr_matrix.todense(Aa)
-        A = graph_matrix(Aa,ind)
-        A = np.reshape(A,(4,shape[0],shape[1]))
-        Ha[0,:,:,:,dim_i] = A
+    shape=imgs.shape
+    Ha = np.ones((shape[0],4,shape[1],shape[2],shape[3]))
+    for img_i in range(shape[0]):
+        img = imgs[img_i]
+        for dim_i in range(shape[3]):
+            img_c = np.array(img[:,:,dim_i],dtype=np.float32)
+            S, ind = construct_sparse(img_c, lamuda)
+            Aa = ss.eye(shape[2]*shape[1]) - alpha * S
+            Aa = csr_matrix.todense(Aa)
+            A = graph_matrix(Aa,ind)
+            A = np.reshape(A,(4,shape[1],shape[2]))
+            Ha[img_i,:,:,:,dim_i] = A
     return Ha
 
 def construct_mnist_graph(imgs,lamuda,alpha):

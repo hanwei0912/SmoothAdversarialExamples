@@ -41,13 +41,12 @@ def load_images(input_dir, ori_input_dir, metadata_file_path,  batch_shape):
         with tf.gfile.Open(filepath) as f:
             image = np.array(Image.open(f).convert('RGB')
                              ).astype(np.float) / 255.0
-        # Images for inception classifier are normalized to be in [-1, 1] interval.
-        images[idx, :, :, :] = image * 2.0 - 1.0
+        images[idx, :, :, :] = image
         filenames.append(os.path.basename(filepath))
         ori_filepath = os.path.join(ori_input_dir,os.path.basename(filepath))
         with tf.gfile.Open(ori_filepath) as f:
             ori_image = np.array(Image.open(f).convert('RGB')).astype(np.float) / 255.0
-        X_test[idx,:,:,:]=ori_image * 2.0 - 1.0
+        X_test[idx,:,:,:]=ori_image
         (name,_) = os.path.splitext(os.path.basename(filepath))
         (ind_l,_) = np.where(rows==name)
         row = rows[ind_l][0]
@@ -74,7 +73,7 @@ def save_images(images, filenames, output_dir):
     # Images for inception classifier are normalized to be in [-1, 1] interval,
     # so rescale them back to [0, 1].
     with tf.gfile.Open(os.path.join(output_dir, filename), 'w') as f:
-      img = (((images[i, :, :, :] + 1.0) * 0.5) * 255.0).astype(np.uint8)
+      img = (images[i, :, :, :] * 255.0).astype(np.uint8)
       Image.fromarray(img).save(f, format='PNG')
 
 def maybe_download_mnist_file(file_name, datadir=None, force=False):
@@ -95,10 +94,3 @@ def data_mnist(datadir=tempfile.gettempdir(), train_start=0,
                         test_end=test_end,
                         center=False)
   return mnist.get_set('test')
-
-def load_images_m():
-    X_test, Y_test = data_mnist(test_start=0,test_end=10000)
-    for i in range(10000):
-        img = X_test[i]
-        y_label = Y_test[i]
-        yield img, y_label

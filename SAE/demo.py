@@ -37,6 +37,7 @@ def mnist_attack():
     eig_num = 300
     lamubda = 10
     alpha = 0.95
+    flag = 1 # quantization
 
     # Set TF random seed to improve reproducibility
     tf.set_random_seed(1234)
@@ -77,6 +78,8 @@ def mnist_attack():
     for i in range(10000):
         Aa = construct_mnist_graph(x_test[i:i+1],lamubda,alpha)
         x_adv = sess.run(adv_x, feed_dict={x:x_test[i:i+1], y:y_test[i:i+1], A:Aa})
+        if flag==1:
+            x_adv = np.round(x_adv*255.0)/255.0
         pre_l = sess.run(preds,feed_dict={x:x_adv, y:y_test[i:i+1]})
         label = np.argmax(y_test[i:i+1])
         pre_l = np.argmax(pre_l)
@@ -91,10 +94,11 @@ def mnist_attack():
 
 def imagnet_attack():
     # ImageNet-specific dimentions
-    batch_shape = [1, 299, 299, 3]
+    batch_shape = [16, 299, 299, 3]
     num_classes = 1001
     lamubda = 10
     alpha = 0.95
+    flag = 1
     checkpoint_path = '../models/inception_v3.ckpt'
     input_dir = '../dataset/zibra'
     metadata_file_path = '../dataset/dev_dataset.csv'
@@ -130,14 +134,15 @@ def imagnet_attack():
                   'batch_size':batch_shape[0],
                   'clip_min': -1.,
                   'clip_max':1.,
-                  'alpha': alpha,
-                  'flag':True}
+                  'alpha': alpha}
     adv_x = attack.generate(x_input, A, **adv_params)
 
     for images, _, labels, filenames in load_images(input_dir, input_dir, metadata_file_path, batch_shape):
-        Aa = construct_imagenet_graph((images+1.0)*0.5,lamubda,alpha)
+        Aa = construct_imagenet_graph((images),lamubda,alpha)
         begin=time.time()
         x_adv = sess.run(adv_x,feed_dict={x_input:images, A:Aa})
+        if flag==1:
+            x_adv = np.round(x_adv*255.0)/255.0
         end=time.time()
         print('cost total:', end-begin,'s')
         dist = np.sum((x_adv-images)**2,axis=(1,2,3))**.5
@@ -148,7 +153,7 @@ def imagnet_attack():
     return
 
 def main(_):
-    mnist_attack()
+    imagnet_attack()
 
 if __name__ == '__main__':
     tf.app.run()
