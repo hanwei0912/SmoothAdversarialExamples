@@ -3,10 +3,10 @@
 % mex ical_std.c
 
 % Feed in integers
-src = round(255*rand(128));
-dst = round(255*rand(128));
+src = round(255*rand(32));
+dst = round(255*rand(32));
 
-[I Map] = MAD_index_april_2010( src , dst );
+[I Map] = MAD_index_april_2010( src , dst, 2 );
 % I.LO: the lo quality index
 % I.HI: the hi quality index
 % I.MAD: the MAD quality index, using both indices

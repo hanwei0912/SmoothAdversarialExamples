@@ -1,4 +1,4 @@
-function [index map gabors] = MAD_index_april_2010( ref_img, dst_img, thresh )
+function [index map gabors] = MAD_index_april_2010( ref_img, dst_img, BSIZE, thresh )
 % TODO: Add helping text for function
 % Author: Eric Larson
 % Department of Electrical and Computer Engineering
@@ -43,8 +43,8 @@ dst = double( dst_img );
 
 % Calculate high quality index
 % Calculate low quality index
-[index.HI map.HI] = hi_index( ref_img, dst_img );
-[index.LO map.LO] = lo_index( ref, dst );
+[index.HI map.HI] = hi_index( ref_img, dst_img, BSIZE );
+[index.LO map.LO] = lo_index( ref, dst, BSIZE );
 
 % Combine outputs using sigmoid blend
 if( nargin > 3 )
@@ -72,7 +72,7 @@ end
 %-------------------------------------------
 
 %-----------------------------------------------------
-function [I mp imgs] = hi_index( ref_img, dst_img )
+function [I mp imgs] = hi_index( ref_img, dst_img, BSIZE )
 % Calculate the high quality index by calculating the masking map and
 % then approximating the local statistics, using filtering.
 % Author: Eric Larson
@@ -129,7 +129,7 @@ dstS = dst;
 % Use c code to get fast local stats
 [std_2 std_1 m1_1] = ical_std( dst-ref, ref );
 
-BSIZE = 16;
+%BSIZE = 16;
 
 Ci_ref = log(std_1./m1_1); % contrast of reference (also a measure of entropy)
 Ci_dst = log(std_2./m1_1); % contrast of distortions (also a measure of entropy)
@@ -167,7 +167,7 @@ end
 %-----------------------------------------------------
 
 %-----------------------------------------------------
-function [I mp gabors] = lo_index( ref, dst )
+function [I mp gabors] = lo_index( ref, dst, BSIZE )
 % Calculate the low quality index by calculating the Gabor analysis and
 % then the local statistics,
 % Author: Eric Larson
@@ -192,7 +192,7 @@ if( nargout == 3)
 end
 
 im_k = 0;
-BSIZE = 16;
+%BSIZE = 16;
 for gb_i = 1:5
   for gb_j = 1:4
     
