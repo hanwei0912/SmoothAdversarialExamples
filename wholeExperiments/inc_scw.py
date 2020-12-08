@@ -6,7 +6,7 @@ import os
 import csv
 import pdb
 
-#from attacks_SAE import SmoothCarliniWagnerSparse
+from attacks_SAE import SmoothCarliniWagnerSparse
 import numpy as np
 from PIL import Image
 from cleverhans.utils_tf import tf_model_load
